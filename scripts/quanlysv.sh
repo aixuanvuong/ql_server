@@ -152,7 +152,7 @@ update_version() {
   echo ""
   echo -e "${CYAN}→ Đang biên dịch lại Frontend...${NC}"
   cd "$INSTALL_DIR/frontend" 2>/dev/null || cd "$INSTALL_DIR"
-  npm install --legacy-peer-deps
+  NODE_ENV=development npm install --include=dev --legacy-peer-deps
   npm run build
 
   mkdir -p "$WEB_ROOT"

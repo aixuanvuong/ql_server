@@ -126,7 +126,7 @@ npm install --production --legacy-peer-deps
 
 echo "[3/5] 🔨 Biên dịch lại giao diện Frontend (Production Build)..."
 cd "${this.installDir}/frontend" 2>/dev/null || cd "${this.installDir}"
-npm install --legacy-peer-deps
+NODE_ENV=development npm install --include=dev --legacy-peer-deps
 npm run build
 
 echo "[4/5] 🌐 Triển khai file tĩnh vào Web Server Nginx..."

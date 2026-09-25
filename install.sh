@@ -161,7 +161,7 @@ VITE_API_URL=
 EOF
 
 echo -e "${CYAN}→ Đang cài đặt thư viện Frontend và build tĩnh...${NC}"
-npm install --legacy-peer-deps
+NODE_ENV=development npm install --include=dev --legacy-peer-deps
 npm run build
 
 mkdir -p "$WEB_ROOT"
