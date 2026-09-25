@@ -147,9 +147,17 @@ export const TelegramSettingsModal: React.FC<TelegramSettingsModalProps> = ({
     if (!targetChatId) {
       setFeedback({
         success: false,
-        message: 'Vui lòng nhập Admin Chat ID trước khi gửi tin nhắn thử nghiệm.'
+        message: 'Vui lòng nhập Admin Chat ID của bạn trước khi gửi tin nhắn thử nghiệm (lấy từ bot @userinfobot).'
       });
       return;
+    }
+
+    // Nếu người dùng vừa gõ Token mới vào ô mà chưa bấm Lưu, tự động lưu tạm để gửi test ngay
+    if (botTokenInput.trim()) {
+      localStorage.setItem('ubuntu_monitor_telegram_bot_token', botTokenInput.trim());
+    }
+    if (adminIdInput.trim()) {
+      localStorage.setItem('ubuntu_monitor_telegram_admin_id', adminIdInput.trim());
     }
 
     setSendingTestMsg(true);
@@ -162,6 +170,8 @@ export const TelegramSettingsModal: React.FC<TelegramSettingsModalProps> = ({
           success: true,
           message: res.message || `Đã gửi tin nhắn test thành công tới ID: ${targetChatId}`
         });
+        // Cập nhật lại config sau khi test thành công
+        loadConfig();
       } else {
         setFeedback({
           success: false,
@@ -258,6 +268,12 @@ export const TelegramSettingsModal: React.FC<TelegramSettingsModalProps> = ({
                   </a>
                   , nhấn <code className="bg-slate-900 px-1.5 py-0.5 rounded text-sky-300 font-mono">/start</code> để lấy số <strong className="text-white">Id</strong> của bạn.
                 </li>
+                <li className="bg-amber-500/10 p-2 rounded-lg border border-amber-500/30 text-amber-200">
+                  <strong className="text-white">⚠️ BẮT BUỘC:</strong> Mở con bot vừa tạo của bạn trên Telegram và nhấn nút <strong className="text-white bg-slate-900 px-1.5 py-0.5 rounded font-mono">START</strong> (hoặc gõ <code className="text-sky-300 font-mono">/start</code>).
+                  <div className="text-[11px] text-amber-300/90 mt-0.5">
+                    Telegram không cho phép Bot tự ý gửi tin nhắn trước cho người lạ nếu bạn chưa từng bấm Start!
+                  </div>
+                </li>
                 <li>
                   Dán Token và Admin ID vào biểu mẫu bên dưới, sau đó bấm <strong className="text-white">"Lưu & Áp Dụng Cấu Hình"</strong>.
                 </li>
@@ -317,11 +333,11 @@ export const TelegramSettingsModal: React.FC<TelegramSettingsModalProps> = ({
               </div>
 
               {/* Nút gửi tin nhắn test trực tiếp */}
-              {config.hasToken && (
+              {(config?.hasToken || botTokenInput.trim().length > 10) && (
                 <button
                   type="button"
                   onClick={handleSendTestMessage}
-                  disabled={sendingTestMsg || !config.adminId}
+                  disabled={sendingTestMsg || (!config?.adminId && !adminIdInput.trim())}
                   className="px-3 py-1.5 rounded-lg bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 border border-sky-500/30 text-xs font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                 >
                   <BellRing className={`w-3.5 h-3.5 ${sendingTestMsg ? 'animate-bounce text-sky-300' : ''}`} />
