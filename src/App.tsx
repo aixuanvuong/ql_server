@@ -93,7 +93,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-sans selection:bg-emerald-500/20 dark:selection:bg-emerald-500/30 selection:text-emerald-900 dark:selection:text-emerald-200 transition-colors duration-200">
       {/* 1. Header chính */}
       <Header
         user={user}
@@ -157,10 +157,10 @@ export default function App() {
           <div className="space-y-4 pb-12 md:pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                   Web-based SSH Terminal
                 </h2>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Thực thi lệnh trực tiếp trên máy chủ Ubuntu qua WebSocket stream
                 </p>
               </div>

@@ -3,16 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>Quản Lý Server</title>
-    <meta name="description" content="Quản Lý Server: Giám sát tài nguyên máy chủ từ xa thời gian thực, Web SSH Terminal và AI Agent, hỗ trợ cài đặt PWA đa nền tảng." />
+    <title>Quả Lý Sever</title>
+    <meta name="description" content="Quả Lý Sever: Giám sát tài nguyên máy chủ từ xa thời gian thực, Web SSH Terminal và AI Agent, hỗ trợ cài đặt PWA đa nền tảng." />
     
     <!-- PWA & Mobile Meta Tags -->
     <meta name="theme-color" content="#020617" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Quản Lý Server" />
-    <meta name="application-name" content="Quản Lý Server" />
+    <meta name="apple-mobile-web-app-title" content="Quả Lý Sever" />
+    <meta name="application-name" content="Quả Lý Sever" />
 
     <!-- Favicon & Touch Icons -->
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
@@ -20,12 +20,30 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
 
     <!-- Open Graph & Social Cards -->
-    <meta property="og:title" content="Quản Lý Server" />
-    <meta property="og:description" content="Quản Lý Server: Giám sát tài nguyên máy chủ từ xa thời gian thực, Web SSH Terminal và AI Agent, hỗ trợ cài đặt PWA đa nền tảng." />
+    <meta property="og:title" content="Quả Lý Sever" />
+    <meta property="og:description" content="Quả Lý Sever: Giám sát tài nguyên máy chủ từ xa thời gian thực, Web SSH Terminal và AI Agent, hỗ trợ cài đặt PWA đa nền tảng." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <!-- Instant Theme Detection Script -->
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('theme');
+          var isDark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches) || (saved !== 'light');
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+            document.documentElement.style.colorScheme = 'dark';
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+            document.documentElement.style.colorScheme = 'light';
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
-  <body class="bg-slate-950 text-slate-100 antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
+  <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 antialiased selection:bg-emerald-500/20 dark:selection:bg-emerald-500/30 selection:text-emerald-900 dark:selection:text-emerald-200 transition-colors duration-200">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

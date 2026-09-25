@@ -32,9 +32,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 }) => {
   if (!metrics) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-slate-400">
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-slate-500 dark:text-slate-400">
         <div className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mb-4" />
-        <p className="text-sm">Đang kết nối và nạp dữ liệu phần cứng từ máy chủ Ubuntu...</p>
+        <p className="text-sm font-medium">Đang kết nối và nạp dữ liệu phần cứng từ máy chủ Ubuntu...</p>
       </div>
     );
   }
@@ -58,7 +58,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           progressPercent={metrics.cpu.loadPercent}
           subtitle={`${staticInfo.cores} Nhân vật lý`}
           icon={<Cpu className="w-5 h-5" />}
-          colorClass="text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+          colorClass="text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
         />
 
         {/* CPU Temp */}
@@ -71,10 +71,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           icon={<Flame className="w-5 h-5" />}
           colorClass={
             metrics.cpu.temperature > 75
-              ? 'text-rose-400 bg-rose-500/10 border-rose-500/20'
+              ? 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20'
               : metrics.cpu.temperature > 55
-              ? 'text-amber-400 bg-amber-500/10 border-amber-500/20'
-              : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+              ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20'
+              : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
           }
         />
 
@@ -86,7 +86,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           progressPercent={metrics.memory.usedPercent}
           subtitle={`${(metrics.memory.used / (1024 ** 3)).toFixed(1)} / ${(metrics.memory.total / (1024 ** 3)).toFixed(1)} GB`}
           icon={<Database className="w-5 h-5" />}
-          colorClass="text-purple-400 bg-purple-500/10 border-purple-500/20"
+          colorClass="text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/20"
         />
 
         {/* Disk Usage */}
@@ -97,7 +97,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           progressPercent={metrics.disk.usedPercent}
           subtitle={`${(metrics.disk.used / (1024 ** 3)).toFixed(0)} / ${(metrics.disk.total / (1024 ** 3)).toFixed(0)} GB`}
           icon={<HardDrive className="w-5 h-5" />}
-          colorClass="text-cyan-400 bg-cyan-500/10 border-cyan-500/20"
+          colorClass="text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 border-cyan-500/20"
         />
       </div>
 
@@ -116,21 +116,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <SystemAlertsSection token={token} socket={socket} />
 
       {/* 6. Live Trends Timeline (Sparkline chart) */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm dark:shadow-lg transition-colors">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Activity className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-sm font-semibold text-white">Lịch sử tải thời gian thực (15 điểm đo gần nhất)</h3>
+            <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Lịch sử tải thời gian thực (15 điểm đo gần nhất)</h3>
           </div>
-          <span className="text-xs text-slate-400 font-mono">Chu kỳ 1.5s/lần</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Chu kỳ 1.5s/lần</span>
         </div>
 
         {/* Visual History Bars */}
-        <div className="h-32 flex items-end gap-1.5 pt-4 pb-2 border-b border-slate-800/80">
+        <div className="h-32 flex items-end gap-1.5 pt-4 pb-2 border-b border-slate-200 dark:border-slate-800/80">
           {history.map((pt, i) => (
             <div key={i} className="flex-1 flex flex-col justify-end items-center gap-1 group relative h-full">
               {/* Tooltip on hover */}
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 bg-slate-950 text-[10px] text-slate-200 px-1.5 py-0.5 rounded border border-slate-700 pointer-events-none whitespace-nowrap z-10 font-mono">
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 bg-slate-900 dark:bg-slate-950 text-[10px] text-white dark:text-slate-200 px-1.5 py-0.5 rounded border border-slate-700 pointer-events-none whitespace-nowrap z-10 font-mono shadow-md">
                 CPU: {pt.cpu}% | RAM: {pt.mem}%
               </div>
 
@@ -151,10 +151,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           ))}
         </div>
 
-        <div className="flex items-center justify-between text-[11px] text-slate-400 mt-3 font-mono">
+        <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-3 font-mono">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm bg-emerald-400 inline-block" />
+              <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" />
               Tải CPU (%)
             </span>
             <span className="flex items-center gap-1.5">
@@ -164,7 +164,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
           <button
             onClick={onOpenTerminal}
-            className="text-emerald-400 hover:text-emerald-300 font-sans cursor-pointer underline text-xs"
+            className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-sans cursor-pointer underline text-xs"
           >
             Mở Web SSH để xử lý tiến trình &rarr;
           </button>

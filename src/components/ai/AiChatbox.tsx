@@ -280,18 +280,18 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
   ];
 
   return (
-    <div className="flex flex-col h-full bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl text-slate-100">
+    <div className="flex flex-col h-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl text-slate-800 dark:text-slate-100 transition-colors">
       {/* Header với Nút Gạt "Require Approval" vs "Auto-Pilot" */}
-      <div className="p-3 bg-slate-950/90 border-b border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+      <div className="p-3 bg-slate-50 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center">
             <Bot className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <h3 className="text-xs font-bold text-white flex items-center gap-1">
+              <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1">
                 <span>Autonomous Agent</span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-mono border border-purple-500/30">
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/10 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 font-mono border border-purple-500/30">
                   God Mode
                 </span>
               </h3>
@@ -299,7 +299,7 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
                 type="button"
                 onClick={() => setIsSettingsOpen(true)}
                 title="Bấm để cấu hình mô hình hoặc khóa API OmniRoute"
-                className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono flex items-center gap-1 border border-slate-700 transition-colors cursor-pointer"
+                className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono flex items-center gap-1 border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer"
               >
                 <span>{currentModel}</span>
                 <SlidersHorizontal className="w-2.5 h-2.5 opacity-70" />
@@ -307,22 +307,22 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
               {messages.filter(m => m.id !== 'welcome').length > 0 && (
                 <span
                   title="Số tin nhắn trước đó đang được AI nhớ và phân tích ngữ cảnh"
-                  className="text-[9px] px-1.5 py-0.5 rounded-full bg-sky-500/10 text-sky-300 font-mono border border-sky-500/30 flex items-center gap-1"
+                  className="text-[9px] px-1.5 py-0.5 rounded-full bg-sky-500/10 text-sky-700 dark:text-sky-300 font-mono border border-sky-500/30 flex items-center gap-1"
                 >
                   <MessageSquare className="w-2.5 h-2.5" />
                   <span>Nhớ {messages.filter(m => m.id !== 'welcome').length} câu</span>
                 </span>
               )}
             </div>
-            <p className="text-[10px] text-slate-400">
+            <p className="text-[10px] text-slate-500 dark:text-slate-400">
               {executionMode === 'auto_pilot' ? (
-                <span className="text-amber-400 font-medium flex items-center gap-1">
-                  <Zap className="w-3 h-3 text-amber-400" />
+                <span className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-amber-500 dark:text-amber-400" />
                   Auto-Pilot: Tự chạy lệnh không cần duyệt
                 </span>
               ) : (
-                <span className="text-emerald-400 font-medium flex items-center gap-1">
-                  <Shield className="w-3 h-3 text-emerald-400" />
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                  <Shield className="w-3 h-3 text-emerald-500 dark:text-emerald-400" />
                   An toàn: Luôn hỏi bạn trước khi chạy lệnh
                 </span>
               )}
@@ -332,14 +332,14 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
 
         {/* Nút Gạt (Toggle) 2 Chế Độ: Require Approval vs Auto-Pilot */}
         <div className="flex items-center gap-1.5 self-end sm:self-auto">
-          <div className="bg-slate-900 p-0.5 rounded-xl border border-slate-800 flex items-center">
+          <div className="bg-slate-100 dark:bg-slate-900 p-0.5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center">
             <button
               type="button"
               onClick={() => handleToggleMode('require_approval')}
               className={`px-2 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1 transition-all cursor-pointer ${
                 executionMode === 'require_approval'
                   ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
               title="Chế độ an toàn: AI phải xin phép bạn trước khi chạy lệnh"
             >
@@ -353,7 +353,7 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
               className={`px-2 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1 transition-all cursor-pointer ${
                 executionMode === 'auto_pilot'
                   ? 'bg-amber-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
               title="Chế độ nguy hiểm: AI tự động phân tích và tự chạy lệnh sửa lỗi đến khi xong"
             >
@@ -363,14 +363,14 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
           </div>
 
           {/* Toggle Kèm ngữ cảnh Terminal */}
-          <label className="flex items-center gap-1 text-[11px] text-slate-400 cursor-pointer bg-slate-900 px-2 py-1 rounded-xl border border-slate-800 hover:border-slate-700">
+          <label className="flex items-center gap-1 text-[11px] text-slate-600 dark:text-slate-400 cursor-pointer bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700">
             <input
               type="checkbox"
               checked={includeContext}
               onChange={(e) => setIncludeContext(e.target.checked)}
               className="rounded accent-purple-500"
             />
-            <Terminal className="w-3 h-3 text-purple-400" />
+            <Terminal className="w-3 h-3 text-purple-500 dark:text-purple-400" />
             <span className="hidden md:inline">Log</span>
           </label>
 
@@ -389,7 +389,7 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
               ]);
             }}
             title="Xóa sạch bộ nhớ ngữ cảnh hội thoại để bắt đầu phiên mới"
-            className="px-2 py-1 rounded-xl bg-slate-900 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 border border-slate-800 hover:border-rose-500/30 text-[11px] flex items-center gap-1 transition-all cursor-pointer"
+            className="px-2 py-1 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-rose-500/20 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-300 border border-slate-200 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-500/30 text-[11px] flex items-center gap-1 transition-all cursor-pointer"
           >
             <Trash2 className="w-3 h-3" />
             <span className="hidden sm:inline">Xóa nhớ</span>
@@ -399,16 +399,16 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
 
       {/* Thông báo cảnh báo khi ở chế độ Auto-Pilot */}
       {executionMode === 'auto_pilot' && (
-        <div className="px-3 py-1.5 bg-amber-950/40 border-b border-amber-500/20 text-amber-300 text-[10px] flex items-center justify-between gap-2">
+        <div className="px-3 py-1.5 bg-amber-500/10 dark:bg-amber-950/40 border-b border-amber-500/20 text-amber-800 dark:text-amber-300 text-[10px] flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 truncate">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 flex-shrink-0" />
             <span className="truncate">
               <strong>Cảnh báo Auto-Pilot:</strong> AI sẽ tự động gọi lệnh shell liên tiếp với toàn quyền root.
             </span>
           </div>
           <button
             onClick={() => handleToggleMode('require_approval')}
-            className="text-[10px] underline text-amber-200 hover:text-white flex-shrink-0 cursor-pointer"
+            className="text-[10px] underline text-amber-700 dark:text-amber-200 hover:text-amber-950 dark:hover:text-white flex-shrink-0 cursor-pointer"
           >
             Chuyển về Cần Duyệt
           </button>
@@ -416,7 +416,7 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
       )}
 
       {/* Danh sách tin nhắn */}
-      <div className="flex-1 p-3.5 overflow-y-auto space-y-3.5 text-xs">
+      <div className="flex-1 p-3.5 overflow-y-auto space-y-3.5 text-xs bg-slate-50/50 dark:bg-slate-900/50">
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -428,34 +428,34 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
               <span>{msg.timestamp}</span>
               {msg.executionMode && (
                 <span className={`px-1 rounded text-[9px] font-mono ${
-                  msg.executionMode === 'auto_pilot' ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300'
+                  msg.executionMode === 'auto_pilot' ? 'bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300' : 'bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
                 }`}>
                   {msg.executionMode === 'auto_pilot' ? '⚡ Auto-Pilot' : '🛡️ Require Approval'}
                 </span>
               )}
               {msg.hasContext && (
-                <span className="text-purple-400 bg-purple-500/10 px-1 rounded text-[9px]">
+                <span className="text-purple-600 dark:text-purple-400 bg-purple-500/10 px-1 rounded text-[9px]">
                   +Terminal Log
                 </span>
               )}
             </div>
 
             <div
-              className={`p-3 rounded-2xl max-w-[94%] leading-relaxed ${
+              className={`p-3 rounded-2xl max-w-[94%] leading-relaxed shadow-sm ${
                 msg.sender === 'user'
                   ? 'bg-purple-600 text-white rounded-tr-sm'
-                  : 'bg-slate-950 border border-slate-800 text-slate-200 rounded-tl-sm'
+                  : 'bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-sm'
               }`}
             >
               {/* Lịch sử các bước thực thi trong Agentic Loop (nếu có) */}
               {msg.steps && msg.steps.length > 0 && (
-                <div className="mb-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-semibold text-purple-300 border-b border-slate-800/80 pb-1.5">
+                <div className="mb-3 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-purple-700 dark:text-purple-300 border-b border-slate-200 dark:border-slate-800/80 pb-1.5">
                     <span className="flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-amber-400" />
+                      <Zap className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                       LỊCH SỬ THỰC THI ({msg.steps.length} BƯỚC AGENTIC)
                     </span>
-                    <span className="text-[10px] text-slate-400 font-mono">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                       {msg.executionMode === 'auto_pilot' ? 'Tự Động' : 'Đã Phê Duyệt'}
                     </span>
                   </div>
@@ -469,7 +469,7 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
                       return (
                         <div
                           key={step.stepIndex}
-                          className="rounded-lg border border-slate-800 bg-slate-950/70 overflow-hidden text-[11px]"
+                          className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/70 overflow-hidden text-[11px]"
                         >
                           <div
                             onClick={() =>
@@ -477,30 +477,30 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
                                 isExpanded ? null : `${msg.id}-${step.stepIndex}`
                               )
                             }
-                            className="p-2 flex items-center justify-between gap-2 hover:bg-slate-800/40 cursor-pointer transition-colors"
+                            className="p-2 flex items-center justify-between gap-2 hover:bg-slate-100 dark:hover:bg-slate-800/40 cursor-pointer transition-colors"
                           >
                             <div className="flex items-center gap-2 min-w-0">
-                              <span className="w-4 h-4 rounded-full bg-slate-800 text-slate-300 font-mono text-[9px] flex items-center justify-center flex-shrink-0">
+                              <span className="w-4 h-4 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono text-[9px] flex items-center justify-center flex-shrink-0">
                                 #{step.stepIndex}
                               </span>
-                              <code className="text-white font-mono truncate font-medium">
+                              <code className="text-slate-900 dark:text-white font-mono truncate font-medium">
                                 {step.command}
                               </code>
                             </div>
 
                             <div className="flex items-center gap-1.5 flex-shrink-0">
                               {isSuccess ? (
-                                <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-semibold flex items-center gap-0.5">
+                                <span className="px-1.5 py-0.2 rounded bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold flex items-center gap-0.5">
                                   <CheckCircle2 className="w-3 h-3" />
                                   <span>Exit 0</span>
                                 </span>
                               ) : isRejected ? (
-                                <span className="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 text-[10px] font-semibold flex items-center gap-0.5">
+                                <span className="px-1.5 py-0.2 rounded bg-rose-500/10 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 text-[10px] font-semibold flex items-center gap-0.5">
                                   <XCircle className="w-3 h-3" />
                                   <span>Từ chối</span>
                                 </span>
                               ) : (
-                                <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 text-[10px] font-semibold flex items-center gap-0.5">
+                                <span className="px-1.5 py-0.2 rounded bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] font-semibold flex items-center gap-0.5">
                                   <AlertTriangle className="w-3 h-3" />
                                   <span>Exit {step.toolResult?.exitCode}</span>
                                 </span>
@@ -515,11 +515,11 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
 
                           {/* Chi tiết Output stdout/stderr khi bung rộng */}
                           {isExpanded && (
-                            <div className="p-2.5 bg-black/60 border-t border-slate-800 font-mono text-[10px] space-y-1.5">
+                            <div className="p-2.5 bg-slate-950 border-t border-slate-200 dark:border-slate-800 font-mono text-[10px] space-y-1.5">
                               {step.toolResult?.stdout && (
                                 <div>
                                   <span className="text-slate-400 block mb-0.5">STDOUT:</span>
-                                  <pre className="text-emerald-300 whitespace-pre-wrap break-all max-h-36 overflow-y-auto bg-black/40 p-1.5 rounded">
+                                  <pre className="text-emerald-400 whitespace-pre-wrap break-all max-h-36 overflow-y-auto bg-black/40 p-1.5 rounded">
                                     {step.toolResult.stdout}
                                   </pre>
                                 </div>
@@ -527,7 +527,7 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
                               {step.toolResult?.stderr && (
                                 <div>
                                   <span className="text-rose-400 block mb-0.5">STDERR:</span>
-                                  <pre className="text-rose-300 whitespace-pre-wrap break-all max-h-36 overflow-y-auto bg-black/40 p-1.5 rounded">
+                                  <pre className="text-rose-400 whitespace-pre-wrap break-all max-h-36 overflow-y-auto bg-black/40 p-1.5 rounded">
                                     {step.toolResult.stderr}
                                   </pre>
                                 </div>
@@ -537,7 +537,7 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
                                 {onInsertCommand && (
                                   <button
                                     onClick={() => onInsertCommand(step.command)}
-                                    className="text-purple-300 hover:text-white underline cursor-pointer"
+                                    className="text-purple-400 hover:text-purple-300 underline cursor-pointer"
                                   >
                                     Chạy lại trên Terminal
                                   </button>
@@ -557,23 +557,23 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
 
               {/* Danh sách câu lệnh gợi ý (nếu có) */}
               {msg.suggestions && msg.suggestions.length > 0 && (
-                <div className="mt-3 pt-2.5 border-t border-slate-800/80 space-y-1.5">
-                  <div className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">
+                <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800/80 space-y-1.5">
+                  <div className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
                     Lệnh gợi ý (Bấm để Copy):
                   </div>
                   {msg.suggestions.map((cmd, idx) => (
                     <div
                       key={idx}
-                      className="bg-slate-900 p-2 rounded-xl border border-slate-800 flex items-center justify-between gap-2 font-mono text-[11px]"
+                      className="bg-slate-50 dark:bg-slate-900 p-2 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 font-mono text-[11px]"
                     >
-                      <code className="text-emerald-300 truncate">{cmd}</code>
+                      <code className="text-emerald-700 dark:text-emerald-300 truncate">{cmd}</code>
                       <button
                         onClick={() => handleCopyCommand(cmd)}
-                        className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex-shrink-0 transition-colors"
+                        className="p-1 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex-shrink-0 transition-colors"
                         title="Sao chép lệnh"
                       >
                         {copiedCmd === cmd ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                         ) : (
                           <Copy className="w-3.5 h-3.5" />
                         )}
@@ -588,30 +588,30 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
 
         {/* Trạng thái tiến trình Live Steps đang diễn ra trong Agentic Loop */}
         {loading && (
-          <div className="space-y-2 p-3 bg-slate-950 border border-purple-500/30 rounded-2xl text-xs w-full max-w-[94%]">
-            <div className="flex items-center gap-2 text-purple-300 font-semibold">
-              <RefreshCw className="w-4 h-4 animate-spin text-purple-400 flex-shrink-0" />
+          <div className="space-y-2 p-3 bg-white dark:bg-slate-950 border border-purple-300 dark:border-purple-500/30 rounded-2xl text-xs w-full max-w-[94%] shadow-sm">
+            <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-semibold">
+              <RefreshCw className="w-4 h-4 animate-spin text-purple-600 dark:text-purple-400 flex-shrink-0" />
               <span>AI Agent đang phân tích & vận hành Agentic Loop...</span>
             </div>
 
             {liveSteps.length > 0 && (
-              <div className="space-y-1.5 pt-1 border-t border-slate-800">
+              <div className="space-y-1.5 pt-1 border-t border-slate-200 dark:border-slate-800">
                 {liveSteps.map((step) => (
                   <div
                     key={step.stepIndex}
-                    className="flex items-center justify-between text-[11px] font-mono bg-slate-900/80 p-2 rounded-lg border border-slate-800"
+                    className="flex items-center justify-between text-[11px] font-mono bg-slate-50 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200 dark:border-slate-800"
                   >
-                    <span className="text-slate-300 truncate">
+                    <span className="text-slate-700 dark:text-slate-300 truncate">
                       #{step.stepIndex}: {step.command}
                     </span>
                     <span className={`px-1.5 py-0.2 rounded text-[10px] font-semibold flex-shrink-0 ${
                       step.status === 'success'
-                        ? 'bg-emerald-500/20 text-emerald-400'
+                        ? 'bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
                         : step.status === 'waiting_approval'
-                        ? 'bg-amber-500/20 text-amber-400 animate-pulse'
+                        ? 'bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 animate-pulse'
                         : step.status === 'running_autopilot'
-                        ? 'bg-purple-500/20 text-purple-400 animate-pulse'
-                        : 'bg-slate-800 text-slate-400'
+                        ? 'bg-purple-500/10 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 animate-pulse'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                     }`}>
                       {step.status === 'waiting_approval'
                         ? 'Đang chờ bạn duyệt...'
@@ -631,13 +631,13 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
       </div>
 
       {/* Thanh gợi ý câu hỏi nhanh (Quick Chips) */}
-      <div className="p-2 bg-slate-950/60 border-t border-slate-800/60 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+      <div className="p-2 bg-slate-50/80 dark:bg-slate-950/60 border-t border-slate-200 dark:border-slate-800/60 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
         {quickActions.map((qa, i) => (
           <button
             key={i}
             onClick={() => handleSendMessage(qa.prompt)}
             disabled={loading}
-            className="px-2.5 py-1 bg-slate-900 hover:bg-purple-950/50 hover:border-purple-500/40 border border-slate-800 rounded-lg text-[11px] text-slate-300 hover:text-purple-200 whitespace-nowrap transition-colors flex-shrink-0 cursor-pointer"
+            className="px-2.5 py-1 bg-white dark:bg-slate-900 hover:bg-purple-50 dark:hover:bg-purple-950/50 hover:border-purple-300 dark:hover:border-purple-500/40 border border-slate-200 dark:border-slate-800 rounded-lg text-[11px] text-slate-700 dark:text-slate-300 hover:text-purple-700 dark:hover:text-purple-200 whitespace-nowrap transition-colors flex-shrink-0 cursor-pointer shadow-xs"
           >
             {qa.label}
           </button>
@@ -645,7 +645,7 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
       </div>
 
       {/* Form nhập liệu */}
-      <div className="p-2.5 bg-slate-950 border-t border-slate-800">
+      <div className="p-2.5 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -663,12 +663,12 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
                 : 'Nhập yêu cầu: AI sẽ phân tích và hỏi bạn trước khi chạy lệnh...'
             }
             disabled={loading}
-            className="flex-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-colors"
+            className="flex-1 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-colors shadow-inner"
           />
           <button
             type="submit"
             disabled={loading || !inputValue.trim()}
-            className="p-2 bg-purple-600 hover:bg-purple-500 active:bg-purple-700 disabled:opacity-40 text-white rounded-xl transition-all cursor-pointer flex-shrink-0"
+            className="p-2 bg-purple-600 hover:bg-purple-500 active:bg-purple-700 disabled:opacity-40 text-white rounded-xl transition-all cursor-pointer flex-shrink-0 shadow-md"
             title="Gửi câu hỏi cho AI Agent"
           >
             <Send className="w-4 h-4" />

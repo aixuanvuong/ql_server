@@ -297,12 +297,12 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
 
   return (
     <div
-      className={`flex flex-col bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl transition-all ${
+      className={`flex flex-col bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl dark:shadow-2xl transition-all ${
         isFullscreen ? 'fixed inset-0 z-50 rounded-none border-none' : 'h-[580px] sm:h-[620px]'
       }`}
     >
       {/* Terminal Title Bar */}
-      <div className="bg-slate-900 border-b border-slate-800 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 flex-shrink-0">
+      <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 flex-shrink-0 transition-colors">
         <div className="flex items-center gap-2">
           {/* Terminal Window Dots */}
           <div className="flex items-center gap-1.5 mr-1">
@@ -311,8 +311,8 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs font-mono font-medium text-slate-300">
-            <TerminalIcon className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="flex items-center gap-1.5 text-xs font-mono font-medium text-slate-800 dark:text-slate-300">
+            <TerminalIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span className="hidden sm:inline">bash — ubuntu@server</span>
             <span className="sm:hidden">Web SSH</span>
           </div>
@@ -321,19 +321,19 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
           <span
             className={`text-[10px] px-2 py-0.5 rounded-full font-mono flex items-center gap-1 ${
               terminalStatus === 'connected'
-                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
                 : terminalStatus === 'connecting'
-                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                : 'bg-slate-800 text-slate-400 border border-slate-700'
+                ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
             }`}
           >
             <span
               className={`w-1.5 h-1.5 rounded-full ${
                 terminalStatus === 'connected'
-                  ? 'bg-emerald-400 animate-pulse'
+                  ? 'bg-emerald-500 dark:bg-emerald-400 animate-pulse'
                   : terminalStatus === 'connecting'
-                  ? 'bg-amber-400 animate-pulse'
-                  : 'bg-slate-500'
+                  ? 'bg-amber-500 dark:bg-amber-400 animate-pulse'
+                  : 'bg-slate-400 dark:bg-slate-500'
               }`}
             />
             {terminalStatus === 'connected'
@@ -350,12 +350,12 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
           <div className="relative">
             <button
               onClick={() => setIsQuickMenuOpen(!isQuickMenuOpen)}
-              className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 rounded-lg text-xs font-medium transition-colors cursor-pointer"
               title="Danh sách máy chủ đã lưu (Kết nối nhanh 1-Click)"
             >
-              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              <Zap className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span className="hidden md:inline">Kết nối nhanh</span>
-              <span className="text-[10px] bg-amber-500/20 px-1.5 py-0.2 rounded font-mono text-amber-300">
+              <span className="text-[10px] bg-amber-500/20 px-1.5 py-0.2 rounded font-mono text-amber-700 dark:text-amber-300">
                 {savedProfiles.length}
               </span>
               <ChevronDown className="w-3 h-3 opacity-70" />
@@ -367,10 +367,10 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
                   className="fixed inset-0 z-40"
                   onClick={() => setIsQuickMenuOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-1.5 w-64 bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl z-50 py-1.5 overflow-hidden animate-in fade-in duration-150">
-                  <div className="px-3 py-1.5 border-b border-slate-800 text-[11px] font-semibold text-slate-400 flex items-center justify-between">
+                <div className="absolute right-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-xl shadow-2xl z-50 py-1.5 overflow-hidden animate-in fade-in duration-150">
+                  <div className="px-3 py-1.5 border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between">
                     <span className="flex items-center gap-1">
-                      <Bookmark className="w-3 h-3 text-amber-400" />
+                      <Bookmark className="w-3 h-3 text-amber-500 dark:text-amber-400" />
                       MÁY CHỦ ĐÃ LƯU
                     </span>
                     <button
@@ -378,7 +378,7 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
                         setIsQuickMenuOpen(false);
                         setIsModalOpen(true);
                       }}
-                      className="text-emerald-400 hover:text-emerald-300 text-[10px] flex items-center gap-0.5 cursor-pointer"
+                      className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 text-[10px] flex items-center gap-0.5 cursor-pointer font-medium"
                     >
                       <Plus className="w-3 h-3" />
                       <span>Thêm</span>
@@ -404,18 +404,18 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
                               password: p.password || undefined
                             });
                           }}
-                          className="w-full text-left px-3 py-2 hover:bg-slate-800 flex items-center justify-between gap-2 text-xs transition-colors cursor-pointer group"
+                          className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between gap-2 text-xs transition-colors cursor-pointer group"
                         >
                           <div className="min-w-0">
-                            <div className="font-medium text-white group-hover:text-amber-300 truncate flex items-center gap-1.5">
-                              <Server className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-400 flex-shrink-0" />
+                            <div className="font-medium text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-300 truncate flex items-center gap-1.5">
+                              <Server className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-500 dark:group-hover:text-amber-400 flex-shrink-0" />
                               <span className="truncate">{p.name}</span>
                             </div>
-                            <div className="text-[10px] text-slate-400 font-mono pl-5 truncate">
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono pl-5 truncate">
                               {p.username}@{p.host}:{p.port}
                             </div>
                           </div>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 group-hover:bg-amber-500/20 group-hover:text-amber-300 flex-shrink-0 font-medium">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 group-hover:bg-amber-500/20 group-hover:text-amber-700 dark:group-hover:text-amber-300 flex-shrink-0 font-medium">
                             ⚡ Kết nối
                           </span>
                         </button>
@@ -423,13 +423,13 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
                     )}
                   </div>
 
-                  <div className="border-t border-slate-800 p-1.5 bg-slate-950/60">
+                  <div className="border-t border-slate-200 dark:border-slate-800 p-1.5 bg-slate-50 dark:bg-slate-950/60">
                     <button
                       onClick={() => {
                         setIsQuickMenuOpen(false);
                         setIsModalOpen(true);
                       }}
-                      className="w-full py-1.5 px-2 text-center text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/30 rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1 font-medium"
+                      className="w-full py-1.5 px-2 text-center text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1 font-medium"
                     >
                       <Settings className="w-3 h-3" />
                       <span>Quản lý danh sách máy chủ</span>
@@ -444,19 +444,19 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
             onClick={() => setIsAiOpen(!isAiOpen)}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer border ${
               isAiOpen
-                ? 'bg-purple-600/20 text-purple-300 border-purple-500/40'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                ? 'bg-purple-600/10 dark:bg-purple-600/20 text-purple-700 dark:text-purple-300 border-purple-500/30 dark:border-purple-500/40'
+                : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
             }`}
             title="Bật/Tắt Trợ lý AI SysAdmin"
           >
-            <Bot className="w-3.5 h-3.5 text-purple-400" />
+            <Bot className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
             <span className="hidden sm:inline">Trợ lý AI</span>
             {isAiOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
           </button>
 
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600/10 dark:bg-emerald-600/20 hover:bg-emerald-600/20 dark:hover:bg-emerald-600/30 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-medium transition-colors cursor-pointer"
             title="Cấu hình Host & Quản lý tài khoản SSH"
           >
             <Settings className="w-3 h-3" />
@@ -465,7 +465,7 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
 
           <button
             onClick={handleClearTerminal}
-            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition-colors cursor-pointer"
+            className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
             title="Xóa trắng màn hình terminal (Clear)"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -473,7 +473,7 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
 
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition-colors cursor-pointer"
+            className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
             title={isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}
           >
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}

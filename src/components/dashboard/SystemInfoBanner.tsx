@@ -25,29 +25,29 @@ export const SystemInfoBanner: React.FC<SystemInfoBannerProps> = ({ info, uptime
   };
 
   return (
-    <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm dark:shadow-lg transition-colors">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Left: OS Info */}
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 flex-shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 dark:text-amber-400 flex-shrink-0">
             <TerminalSquare className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-sm sm:text-base font-bold text-white tracking-tight">
+              <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight">
                 {info.distro || 'Ubuntu Linux'}
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 font-mono font-semibold">
                 {info.arch || 'x64'}
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 mt-1">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400 mt-1">
               <span className="flex items-center gap-1 font-mono">
-                <ShieldCheck className="w-3.5 h-3.5 text-slate-500" />
+                <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
                 Kernel {info.release || '6.8.0'}
               </span>
               <span className="flex items-center gap-1">
-                <Layers className="w-3.5 h-3.5 text-slate-500" />
+                <Layers className="w-3.5 h-3.5 text-slate-400" />
                 {info.model || 'Ubuntu Server'}
               </span>
             </div>
@@ -59,23 +59,23 @@ export const SystemInfoBanner: React.FC<SystemInfoBannerProps> = ({ info, uptime
           {onOpenUpdate && (
             <button
               onClick={onOpenUpdate}
-              className="flex items-center gap-2 bg-cyan-950/60 hover:bg-cyan-900/60 px-3.5 py-2.5 rounded-xl border border-cyan-500/30 text-cyan-300 transition-all cursor-pointer shadow-sm group"
+              className="flex items-center gap-2 bg-cyan-50 dark:bg-cyan-950/60 hover:bg-cyan-100 dark:hover:bg-cyan-900/60 px-3.5 py-2.5 rounded-xl border border-cyan-200 dark:border-cyan-500/30 text-cyan-800 dark:text-cyan-300 transition-all cursor-pointer shadow-sm group"
             >
-              <DownloadCloud className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
+              <DownloadCloud className="w-4 h-4 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform" />
               <div className="text-left">
-                <span className="text-[10px] text-cyan-400/80 block uppercase font-semibold">Tự động cập nhật</span>
-                <span className="text-xs font-mono font-medium text-white flex items-center gap-1">
+                <span className="text-[10px] text-cyan-600 dark:text-cyan-400/80 block uppercase font-semibold">Tự động cập nhật</span>
+                <span className="text-xs font-mono font-medium text-slate-900 dark:text-white flex items-center gap-1">
                   1-Click Update
                 </span>
               </div>
             </button>
           )}
 
-          <div className="flex items-center gap-2 bg-slate-950/80 px-3.5 py-2.5 rounded-xl border border-slate-800">
-            <Clock className="w-4 h-4 text-emerald-400" />
+          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950/80 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+            <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <div>
               <span className="text-[10px] text-slate-500 block uppercase font-semibold">Thời gian hoạt động (Uptime)</span>
-              <span className="text-xs sm:text-sm font-mono font-medium text-slate-200">
+              <span className="text-xs sm:text-sm font-mono font-medium text-slate-800 dark:text-slate-200">
                 {formatUptime(uptimeSeconds)}
               </span>
             </div>

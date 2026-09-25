@@ -10,7 +10,7 @@ interface TabsNavProps {
 
 export const TabsNav: React.FC<TabsNavProps> = ({ activeTab, setActiveTab }) => {
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 border-t border-slate-800/90 backdrop-blur-xl px-2 py-1.5 pb-safe">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 border-t border-slate-200 dark:border-slate-800/90 backdrop-blur-xl px-2 py-1.5 pb-safe shadow-lg transition-colors duration-200">
       <div className="grid grid-cols-4 items-center max-w-md mx-auto gap-1">
         {/* Tab 1: Phần Cứng */}
         <button
@@ -18,8 +18,8 @@ export const TabsNav: React.FC<TabsNavProps> = ({ activeTab, setActiveTab }) => 
           onClick={() => setActiveTab('monitor')}
           className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all cursor-pointer ${
             activeTab === 'monitor'
-              ? 'text-emerald-400 bg-emerald-500/10 font-bold'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 font-bold'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           <Activity className="w-5 h-5 mb-0.5" />
@@ -32,8 +32,8 @@ export const TabsNav: React.FC<TabsNavProps> = ({ activeTab, setActiveTab }) => 
           onClick={() => setActiveTab('network')}
           className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all cursor-pointer ${
             activeTab === 'network'
-              ? 'text-cyan-400 bg-cyan-500/10 font-bold'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/15 font-bold'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           <Globe className="w-5 h-5 mb-0.5" />
@@ -46,8 +46,8 @@ export const TabsNav: React.FC<TabsNavProps> = ({ activeTab, setActiveTab }) => 
           onClick={() => setActiveTab('agent')}
           className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all cursor-pointer relative ${
             activeTab === 'agent'
-              ? 'text-purple-300 bg-purple-500/15 font-bold'
-              : 'text-slate-400 hover:text-purple-300'
+              ? 'text-purple-600 dark:text-purple-300 bg-purple-500/15 font-bold'
+              : 'text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-300'
           }`}
         >
           <div className="relative">
@@ -64,8 +64,8 @@ export const TabsNav: React.FC<TabsNavProps> = ({ activeTab, setActiveTab }) => 
           onClick={() => setActiveTab('terminal')}
           className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all cursor-pointer ${
             activeTab === 'terminal'
-              ? 'text-emerald-400 bg-emerald-500/10 font-bold'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 font-bold'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           <Terminal className="w-5 h-5 mb-0.5" />
