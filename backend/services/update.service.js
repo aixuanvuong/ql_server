@@ -137,6 +137,8 @@ if [ -d "dist" ]; then
   cp -r dist/* "$WEB_ROOT/"
 elif [ -d "build" ]; then
   cp -r build/* "$WEB_ROOT/"
+elif [ -d "${this.installDir}/dist" ]; then
+  cp -r "${this.installDir}/dist"/* "$WEB_ROOT/"
 fi
 
 # Đồng bộ file quanlysv.sh vào hệ thống
@@ -147,7 +149,7 @@ fi
 
 echo "[5/5] 🔄 Khởi động lại dịch vụ máy chủ..."
 systemctl restart nginx 2>/dev/null || true
-pm2 restart ql_server 2>/dev/null || pm2 restart server 2>/dev/null || true
+pm2 restart ql_server-backend 2>/dev/null || pm2 restart ql_server 2>/dev/null || pm2 restart all 2>/dev/null || true
 
 echo "✅ Cập nhật thành công 100%! Hệ thống đang chạy phiên bản mới nhất."
 `;
