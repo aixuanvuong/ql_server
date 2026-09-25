@@ -1,6 +1,31 @@
-# 🚀 Ubuntu Remote Monitor & Web SSH với Trợ Lý AI SysAdmin
+# 🚀 Ubuntu Remote Monitor & Web SSH với Trợ Lý AI SysAdmin (Cloudflare Tunnel)
 
-Hệ thống quản trị và giám sát máy chủ **Ubuntu Server** từ xa theo thời gian thực (Real-time), tích hợp **Web-based SSH Terminal** tương thích tối ưu cho điện thoại di động Android và **Trợ lý AI SysAdmin (Google Gemini 3.8 / OpenAI)** có khả năng đọc log, chẩn đoán sự cố và gợi ý câu lệnh khắc phục chuẩn xác.
+Hệ thống quản trị và giám sát máy chủ **Ubuntu Server** từ xa theo thời gian thực (Real-time), tích hợp **Web-based SSH Terminal** tối ưu cho điện thoại Android và **Trợ lý AI SysAdmin (Google Gemini 3.8)**. 
+
+Đặc biệt, hệ thống **bắt buộc chạy qua Cloudflare Tunnel** — cho phép truy cập Internet với chứng chỉ **HTTPS bảo mật miễn phí mà KHÔNG CẦN MỞ CỔNG (Zero Open Ports)** trên Router/Modem/VPS!
+
+---
+
+## ⚡ Cài Đặt Nhanh Bằng 1 Câu Lệnh Duy Nhất (Chạy Qua Cloudflare Tunnel)
+
+Chỉ cần đăng nhập vào máy chủ Ubuntu của bạn qua Terminal và chạy lệnh sau (chạy với quyền `root` hoặc `sudo`):
+
+```bash
+curl -sSL https://raw.githubusercontent.com/aixuanvuong/ql_server/main/install.sh | sudo bash
+```
+
+> **Script tự động thực hiện 100% các công việc sau:**
+> 1. Kiểm tra môi trường và cài đặt các gói hệ thống: `curl`, `git`, `nginx`, `ufw`, `openssl`, `build-essential`.
+> 2. Cài đặt **Node.js v20 LTS**, **PM2** và **`cloudflared` (Cloudflare Tunnel Daemon)** chính thức.
+> 3. Tải mã nguồn mới nhất từ GitHub: `https://github.com/aixuanvuong/ql_server.git`.
+> 4. Tạo mã bí mật `JWT_SECRET` ngẫu nhiên và cấu hình an toàn cho Backend.
+> 5. Cài đặt toàn bộ dependencies và biên dịch Frontend tĩnh.
+> 6. Thiết lập **PM2 Process Manager** để ứng dụng tự động chạy ngầm và tự khởi động lại khi reboot server.
+> 7. Tự động cấu hình **Nginx Reverse Proxy nội bộ** hỗ trợ WebSocket `socket.io` và Web SSH.
+> 8. **Kích hoạt Cloudflare Tunnel**:
+>    - Hỗ trợ nhập trực tiếp **Cloudflare Tunnel Token** (gán domain riêng qua Cloudflare Zero Trust).
+>    - Hoặc tự động tạo **Quick Tunnel** miễn phí (`https://xxxx.trycloudflare.com`) dùng ngay lập tức không cần cấu hình DNS.
+> 9. **Bảo mật tuyệt đối (Zero Inbound Ports)**: Không cần mở bất kỳ cổng web nào (80/443/5000) ra ngoài Internet!
 
 ---
 

@@ -17,7 +17,15 @@ export const removeStoredToken = (): void => {
 };
 
 export const getStoredServerUrl = (): string => {
-  return localStorage.getItem(SERVER_URL_KEY) || (import.meta.env.VITE_API_URL as string) || 'http://localhost:5000';
+  const stored = localStorage.getItem(SERVER_URL_KEY);
+  if (stored) return stored;
+  if (typeof window !== 'undefined' && window.location.origin) {
+    // Nếu đang chạy trên web thật hoặc qua Cloudflare Tunnel, dùng luôn origin hiện tại
+    if (!window.location.origin.includes(':3000') && !window.location.origin.includes(':5173')) {
+      return window.location.origin;
+    }
+  }
+  return (import.meta.env.VITE_API_URL as string) || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000');
 };
 
 export const setStoredServerUrl = (url: string): void => {
