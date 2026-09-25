@@ -1,11 +1,16 @@
 // filepath: backend/services/system.service.js
 const si = require('systeminformation');
+const raplService = require('./rapl.service');
 
 /**
  * Service đọc dữ liệu phần cứng thời gian thực từ nhân hệ điều hành Ubuntu
- * Sử dụng thư viện `systeminformation` để truy xuất /proc và /sys
+ * Sử dụng thư viện `systeminformation` và Intel RAPL Sysfs (/sys/class/powercap/intel-rapl/)
  */
 class SystemService {
+  constructor() {
+    this.cachedStatic = null;
+  }
+
   /**
    * Lấy thông tin tĩnh của hệ thống (OS, CPU Model, Hostname)
    */
@@ -17,7 +22,7 @@ class SystemService {
         si.system()
       ]);
 
-      return {
+      this.cachedStatic = {
         hostname: osInfo.hostname,
         platform: osInfo.platform,
         distro: osInfo.distro,
@@ -29,6 +34,8 @@ class SystemService {
         speed: cpu.speed,
         model: system.model || 'Ubuntu Server'
       };
+
+      return this.cachedStatic;
     } catch (error) {
       console.error('Lỗi khi đọc thông tin tĩnh hệ thống:', error.message);
       return {
@@ -41,7 +48,7 @@ class SystemService {
   }
 
   /**
-   * Lấy các chỉ số động cập nhật theo chu kỳ (CPU load, RAM, Temp, Disk, Uptime)
+   * Lấy các chỉ số động cập nhật theo chu kỳ (CPU load, RAM, Temp, Disk, Uptime, Intel RAPL Power)
    */
   async getDynamicMetrics() {
     try {
@@ -68,6 +75,11 @@ class SystemService {
         use: 0
       };
 
+      // Đọc công suất điện năng từ phần cứng Intel RAPL (Running Average Power Limit)
+      const coresCount = this.cachedStatic ? this.cachedStatic.cores : (currentLoad.cpus ? currentLoad.cpus.length : 4);
+      const cpuBrand = this.cachedStatic ? this.cachedStatic.cpuBrand : '';
+      const power = await raplService.getMetrics(currentLoad.currentLoad, coresCount, cpuBrand);
+
       return {
         timestamp: Date.now(),
         uptime: time.uptime, // Số giây server đã hoạt động liên tục
@@ -88,7 +100,8 @@ class SystemService {
           available: rootDisk.available,
           usedPercent: Math.round(rootDisk.use * 10) / 10,
           mount: rootDisk.mount
-        }
+        },
+        power
       };
     } catch (error) {
       console.error('Lỗi khi thu thập metrics hệ thống:', error.message);

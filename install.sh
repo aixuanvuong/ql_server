@@ -75,6 +75,14 @@ echo -e "${YELLOW}📦 BƯỚC 2: CẬP NHẬT HỆ THỐNG VÀ CÀI ĐẶT CÁC
 apt-get update -y
 apt-get install -y curl git ufw nginx build-essential openssl
 
+# Kích hoạt module nhân Linux Intel RAPL (Running Average Power Limit) để trích xuất điện năng phần cứng
+echo -e "${CYAN}→ Kích hoạt module kernel Intel RAPL & PowerCap...${NC}"
+modprobe intel_rapl_msr 2>/dev/null || modprobe intel_rapl_common 2>/dev/null || true
+modprobe msr 2>/dev/null || true
+if [ -d "/sys/class/powercap/intel-rapl" ]; then
+  chmod -R a+r /sys/class/powercap/intel-rapl 2>/dev/null || true
+fi
+
 # 4. Cài đặt Node.js LTS (v20.x) & PM2
 if ! command -v node &> /dev/null || [ "$(node -v | cut -d'.' -f1 | tr -d 'v')" -lt 18 ]; then
   echo -e "${CYAN}→ Đang cài đặt Node.js v20 LTS...${NC}"

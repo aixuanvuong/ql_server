@@ -46,7 +46,8 @@ export default function App() {
             cpuLoad: metrics.cpu.loadPercent,
             ramUsedPercent: metrics.memory.usedPercent,
             temperature: metrics.cpu.temperature,
-            uptimeSeconds: metrics.uptime
+            uptimeSeconds: metrics.uptime,
+            powerWatts: metrics.power?.currentWatts
           } : undefined,
           executionMode: 'auto_pilot'
         });

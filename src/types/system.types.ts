@@ -13,6 +13,34 @@ export interface StaticSystemInfo {
   model: string;
 }
 
+export interface RaplPowerZone {
+  id: string;
+  name: string;
+  label: string;
+  powerWatts: number;
+  energyJoules?: number;
+  maxEnergyRangeJoules?: number;
+  constraintPl1Watts?: number;
+  constraintPl2Watts?: number;
+}
+
+export interface RaplPowerMetrics {
+  supported: boolean;
+  isHardwareRapl: boolean; // true nếu đọc trực tiếp từ /sys/class/powercap/intel-rapl
+  source: string;
+  currentWatts: number;
+  packageWatts: number;
+  coresWatts: number;
+  uncoreWatts?: number;
+  dramWatts?: number;
+  platformWatts?: number;
+  limitPl1Watts?: number; // Giới hạn công suất dài hạn (PL1 / TDP)
+  limitPl2Watts?: number; // Giới hạn công suất ngắn hạn (PL2 / Turbo Boost)
+  cumulativeKwh: number; // Tổng điện năng tiêu thụ tích lũy (kWh)
+  estimatedCostVnd?: number; // Ước tính chi phí tiền điện (VNĐ)
+  zones: RaplPowerZone[];
+}
+
 export interface DynamicSystemMetrics {
   timestamp: number;
   uptime: number;
@@ -34,6 +62,7 @@ export interface DynamicSystemMetrics {
     usedPercent: number;
     mount: string;
   };
+  power?: RaplPowerMetrics;
 }
 
 export interface SshConfig {

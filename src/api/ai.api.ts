@@ -42,6 +42,7 @@ export interface AiChatPayload {
     ramUsedPercent?: number;
     temperature?: number;
     uptimeSeconds?: number;
+    powerWatts?: number;
   };
   executionMode?: 'require_approval' | 'auto_pilot';
   socketId?: string;

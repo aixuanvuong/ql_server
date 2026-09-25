@@ -1,18 +1,19 @@
 // filepath: frontend/src/components/dashboard/DashboardView.tsx
 import React from 'react';
-import { Cpu, Flame, Database, HardDrive, Activity } from 'lucide-react';
+import { Cpu, Flame, Database, HardDrive, Activity, Zap } from 'lucide-react';
 import { Socket } from 'socket.io-client';
 import { StaticSystemInfo, DynamicSystemMetrics } from '../../types/system.types';
 import { SystemInfoBanner } from './SystemInfoBanner';
 import { StatCard } from './StatCard';
 import { CpuGauge } from './CpuGauge';
 import { MemoryBar } from './MemoryBar';
+import { RaplPowerSection } from './RaplPowerSection';
 import { SystemAlertsSection } from './SystemAlertsSection';
 
 interface DashboardViewProps {
   staticInfo: StaticSystemInfo;
   metrics: DynamicSystemMetrics | null;
-  history: { time: string; cpu: number; mem: number }[];
+  history: { time: string; cpu: number; mem: number; power?: number }[];
   isConnected: boolean;
   onOpenTerminal: () => void;
   onOpenUpdate?: () => void;
@@ -39,6 +40,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     );
   }
 
+  const currentWatts = metrics.power?.currentWatts ?? 0;
+  const pl1Limit = metrics.power?.limitPl1Watts ?? 65;
+
   return (
     <div className="space-y-5 pb-20 md:pb-8">
       {/* 1. Header Banner: OS & Uptime */}
@@ -48,8 +52,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         onOpenUpdate={onOpenUpdate}
       />
 
-      {/* 2. Quick Stat Cards (Top Row) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {/* 2. Quick Stat Cards (Top Row) - Bao gồm cả Công suất điện Intel RAPL */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* CPU Load */}
         <StatCard
           title="TẢI CPU"
@@ -78,6 +82,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           }
         />
 
+        {/* Real-time Power (Intel RAPL) */}
+        <StatCard
+          title="CÔNG SUẤT ĐIỆN"
+          value={currentWatts}
+          unit="W"
+          progressPercent={Math.min(100, Math.round((currentWatts / pl1Limit) * 100))}
+          subtitle={metrics.power?.isHardwareRapl ? 'Intel RAPL Phần Cứng' : `PL1: ${pl1Limit}W`}
+          icon={<Zap className="w-5 h-5" />}
+          colorClass="text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20"
+        />
+
         {/* RAM Usage */}
         <StatCard
           title="BỘ NHỚ RAM"
@@ -101,7 +116,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         />
       </div>
 
-      {/* 3. Detailed CPU Section with Core Details */}
+      {/* 3. Khối Chuyên Sâu: Công Suất Điện Năng Đang Sử Dụng (Intel RAPL) */}
+      <RaplPowerSection power={metrics.power} history={history} />
+
+      {/* 4. Detailed CPU Section with Core Details */}
       <CpuGauge
         loadPercent={metrics.cpu.loadPercent}
         temperature={metrics.cpu.temperature}
@@ -109,13 +127,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         cpuBrand={staticInfo.cpuBrand}
       />
 
-      {/* 4. Memory & Disk Detailed Bars */}
+      {/* 5. Memory & Disk Detailed Bars */}
       <MemoryBar memory={metrics.memory} disk={metrics.disk} />
 
-      {/* 5. Khu vực Hệ thống Tự Vệ & Cứu Hộ: Auto-Ban Hackers & Self-Healing RAM/Disk */}
+      {/* 6. Khu vực Hệ thống Tự Vệ & Cứu Hộ: Auto-Ban Hackers & Self-Healing RAM/Disk */}
       <SystemAlertsSection token={token} socket={socket} />
 
-      {/* 6. Live Trends Timeline (Sparkline chart) */}
+      {/* 7. Live Trends Timeline (Sparkline chart) */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm dark:shadow-lg transition-colors">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -131,7 +149,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div key={i} className="flex-1 flex flex-col justify-end items-center gap-1 group relative h-full">
               {/* Tooltip on hover */}
               <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 bg-slate-900 dark:bg-slate-950 text-[10px] text-white dark:text-slate-200 px-1.5 py-0.5 rounded border border-slate-700 pointer-events-none whitespace-nowrap z-10 font-mono shadow-md">
-                CPU: {pt.cpu}% | RAM: {pt.mem}%
+                CPU: {pt.cpu}% | RAM: {pt.mem}% {pt.power !== undefined ? `| Điện: ${pt.power}W` : ''}
               </div>
 
               {/* Memory bar */}
@@ -160,6 +178,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <span className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm bg-purple-500 inline-block" />
               Tải RAM (%)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-sm bg-amber-500 inline-block" />
+              Điện RAPL (W)
             </span>
           </div>
           <button
