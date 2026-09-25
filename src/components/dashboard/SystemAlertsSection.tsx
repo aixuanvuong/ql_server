@@ -49,7 +49,7 @@ export const SystemAlertsSection: React.FC<SystemAlertsSectionProps> = ({ token,
 
   // Trạng thái thao tác dọn dẹp thủ công
   const [isCleaning, setIsCleaning] = useState(false);
-  const [cleanFeedback, setCleanFeedback] = useState<string | null>(null);
+  const [cleanFeedback, setCleanFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
   // Mở rộng chi tiết log của từng item
   const [expandedAlerts, setExpandedAlerts] = useState<Record<string, boolean>>({});
@@ -178,11 +178,17 @@ export const SystemAlertsSection: React.FC<SystemAlertsSectionProps> = ({ token,
     setCleanFeedback(null);
     try {
       const res = await triggerManualCleanApi(token, type);
-      setCleanFeedback(res.message || 'Thao tác hoàn tất!');
+      setCleanFeedback({
+        success: res.success,
+        message: res.message || (res.success ? 'Thao tác hoàn tất!' : 'Không thể thực thi lệnh')
+      });
       fetchAllData();
-      setTimeout(() => setCleanFeedback(null), 4000);
-    } catch (e) {
-      setCleanFeedback('Lỗi khi kích hoạt dọn dẹp');
+      setTimeout(() => setCleanFeedback(null), 6000);
+    } catch {
+      setCleanFeedback({
+        success: false,
+        message: 'Lỗi khi kích hoạt dọn dẹp hệ thống.'
+      });
     } finally {
       setIsCleaning(false);
     }
@@ -300,9 +306,27 @@ export const SystemAlertsSection: React.FC<SystemAlertsSectionProps> = ({ token,
       )}
 
       {cleanFeedback && (
-        <div className="mx-4 sm:mx-5 p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-          <span>{cleanFeedback}</span>
+        <div
+          className={`mx-4 sm:mx-5 p-3 rounded-xl border text-xs flex items-center justify-between gap-2 shadow-md animate-in fade-in ${
+            cleanFeedback.success
+              ? 'bg-emerald-950/50 border-emerald-500/30 text-emerald-300'
+              : 'bg-amber-950/50 border-amber-500/40 text-amber-200'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {cleanFeedback.success ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            )}
+            <span className="leading-relaxed">{cleanFeedback.message}</span>
+          </div>
+          <button
+            onClick={() => setCleanFeedback(null)}
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-black/30 cursor-pointer flex-shrink-0"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 
