@@ -3,6 +3,7 @@ const OpenAI = require('openai');
 const aiConfig = require('../config/ai.config');
 const commandExecutorService = require('./command_executor.service');
 const agentApprovalService = require('./agent_approval.service');
+const newsService = require('./news.service');
 
 class AiService {
   constructor() {
@@ -59,8 +60,18 @@ class AiService {
    * @param {Object} params.systemMetrics - Thông số CPU, RAM, Nhiệt độ hiện thời
    * @param {'require_approval' | 'auto_pilot'} [params.executionMode='require_approval'] - Chế độ duyệt lệnh
    * @param {string} [params.socketId] - Socket ID của client gửi yêu cầu
+   * @param {Array<{role: string, content: string}>} [params.history=[]] - Lịch sử trò chuyện trước đó
+   * @param {Function} [params.onStepProgress=null] - Callback thông báo tiến độ từng bước cho Telegram / CLI
    */
-  async askAssistant({ userMessage, terminalContext, systemMetrics, executionMode = 'require_approval', socketId = null }) {
+  async askAssistant({
+    userMessage,
+    terminalContext,
+    systemMetrics,
+    executionMode = 'require_approval',
+    socketId = null,
+    history = [],
+    onStepProgress = null
+  }) {
     // 0. Cắt xén và bảo vệ Token Limit
     const safeTerminalLogs = this.sanitizeAndTruncateLogs(terminalContext, 8000);
 
@@ -104,18 +115,27 @@ ${userMessage}
       try {
         console.log(`[AI Service] 📡 [Agent Mode: ${executionMode}] Gửi yêu cầu đến OmniRoute (${this.baseURL}) - Model: ${this.modelName}...`);
 
+        // Đính kèm lịch sử hội thoại trước đó nếu có (dành cho Telegram ChatOps / Multi-turn)
+        const safeHistory = Array.isArray(history)
+          ? history.filter(h => h && h.role && h.content).slice(-8)
+          : [];
+
         const messages = [
           {
             role: 'system',
             content: aiConfig.SYSTEM_PROMPT
           },
+          ...safeHistory,
           {
             role: 'user',
             content: fullUserPrompt
           }
         ];
 
-        const tools = [commandExecutorService.getToolDefinition()];
+        const tools = [
+          commandExecutorService.getToolDefinition(),
+          newsService.getToolDefinition()
+        ];
         const maxIterations = 5; // Giới hạn tối đa 5 bước lặp để tránh vòng lặp vô tận
         const executedSteps = [];
         let finalReplyText = '';
@@ -249,6 +269,19 @@ ${userMessage}
                   });
                 }
 
+                if (typeof onStepProgress === 'function') {
+                  try {
+                    await onStepProgress({
+                      type: 'start',
+                      stepIndex: iterationCount,
+                      command: commandToRun,
+                      executionMode
+                    });
+                  } catch {
+                    // ignore notification error
+                  }
+                }
+
                 // Ghi nhận lịch sử bước chạy
                 executedSteps.push({
                   stepIndex: iterationCount,
@@ -257,6 +290,19 @@ ${userMessage}
                   approved: !toolResult.rejectedByUser,
                   timestamp: Date.now()
                 });
+
+                if (typeof onStepProgress === 'function') {
+                  try {
+                    await onStepProgress({
+                      type: 'finish',
+                      stepIndex: iterationCount,
+                      command: commandToRun,
+                      toolResult
+                    });
+                  } catch {
+                    // ignore notification error
+                  }
+                }
 
                 // Phát sự kiện cập nhật tiến độ hoàn thành bước tới Frontend
                 if (agentApprovalService.io) {
@@ -283,6 +329,91 @@ ${userMessage}
                     timedOut: toolResult.timedOut,
                     rejectedByUser: toolResult.rejectedByUser
                   })
+                });
+              } else if (toolCall.function?.name === 'fetch_quick_news') {
+                let parsedArgs = {};
+                try {
+                  parsedArgs = typeof toolCall.function.arguments === 'string'
+                    ? JSON.parse(toolCall.function.arguments)
+                    : (toolCall.function.arguments || {});
+                } catch (parseErr) {
+                  parsedArgs = {};
+                }
+
+                console.log(`[AI Agent Loop] 📰 AI gọi Tool fetch_quick_news với tham số:`, parsedArgs);
+                if (agentApprovalService.io) {
+                  agentApprovalService.io.emit('ai:agent_step', {
+                    stepIndex: iterationCount,
+                    command: `fetch_quick_news(${parsedArgs.category || 'tonghop'})`,
+                    status: 'running',
+                    executionMode,
+                    timestamp: Date.now()
+                  });
+                }
+
+                if (typeof onStepProgress === 'function') {
+                  try {
+                    await onStepProgress({
+                      type: 'start',
+                      stepIndex: iterationCount,
+                      command: `fetch_quick_news(${parsedArgs.category || 'tonghop'})`,
+                      executionMode
+                    });
+                  } catch {
+                    // ignore
+                  }
+                }
+
+                const newsResult = await newsService.fetchNews({
+                  category: parsedArgs.category || 'tonghop',
+                  limit: parsedArgs.limit || 5
+                });
+
+                executedSteps.push({
+                  stepIndex: iterationCount,
+                  command: `fetch_quick_news (Category: ${parsedArgs.category || 'tonghop'})`,
+                  toolResult: {
+                    success: newsResult.success,
+                    exitCode: newsResult.success ? 0 : 1,
+                    stdout: `Đã lấy thành công ${newsResult.count || 0} bài báo mới nhất.`,
+                    stderr: newsResult.success ? '' : newsResult.message,
+                    executionTimeMs: 100
+                  },
+                  approved: true,
+                  timestamp: Date.now()
+                });
+
+                if (typeof onStepProgress === 'function') {
+                  try {
+                    await onStepProgress({
+                      type: 'finish',
+                      stepIndex: iterationCount,
+                      command: `fetch_quick_news(${parsedArgs.category || 'tonghop'})`,
+                      toolResult: {
+                        success: newsResult.success,
+                        stdout: `Đã tải ${newsResult.count || 0} bài viết`
+                      }
+                    });
+                  } catch {
+                    // ignore
+                  }
+                }
+
+                if (agentApprovalService.io) {
+                  agentApprovalService.io.emit('ai:agent_step', {
+                    stepIndex: iterationCount,
+                    command: `fetch_quick_news(${parsedArgs.category || 'tonghop'})`,
+                    status: newsResult.success ? 'success' : 'failed',
+                    result: newsResult,
+                    executionMode,
+                    timestamp: Date.now()
+                  });
+                }
+
+                messages.push({
+                  role: 'tool',
+                  tool_call_id: toolCall.id,
+                  content: JSON.stringify(newsResult)
                 });
               } else {
                 // Tool không được hỗ trợ

@@ -19,6 +19,7 @@ const registerStatsSocket = require('./sockets/stats.socket');
 const registerSshSocket = require('./sockets/ssh.socket');
 const registerAiSocket = require('./sockets/ai.socket');
 const agentApprovalService = require('./services/agent_approval.service');
+const telegramService = require('./services/telegram.service');
 
 const app = express();
 const server = http.createServer(app);
@@ -108,6 +109,9 @@ selfHealingService.init(io);
 
 // Khởi tạo hệ thống Phê duyệt Lệnh cho AI Autonomous Agent (Human-in-the-Loop)
 agentApprovalService.init(io);
+
+// Khởi tạo Telegram ChatOps Bot (Chế độ Polling & Bảo mật Admin ID)
+telegramService.init();
 setInterval(async () => {
   try {
     const metrics = await systemService.getDynamicMetrics();
