@@ -27,6 +27,7 @@ import {
   TelegramConfigData,
   TelegramTestResponse
 } from '../../api/telegram.api';
+import { clientTelegramListener } from '../../services/client_telegram_listener.service';
 
 interface TelegramSettingsModalProps {
   isOpen: boolean;
@@ -107,6 +108,10 @@ export const TelegramSettingsModal: React.FC<TelegramSettingsModalProps> = ({
           message: res.message || 'Đã cập nhật cấu hình Telegram Bot thành công!'
         });
         setBotTokenInput('');
+        
+        // Khởi động lại dịch vụ lắng nghe tin nhắn trực tiếp
+        clientTelegramListener.restart();
+
         if (onConfigSaved) {
           onConfigSaved(res.data);
         }

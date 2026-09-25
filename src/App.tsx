@@ -1,5 +1,5 @@
 // filepath: frontend/src/App.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getStoredToken, removeStoredToken } from './api/auth.api';
 import { AuthUser } from './types/system.types';
 import { useSocket } from './hooks/useSocket';
@@ -14,6 +14,8 @@ import { DashboardView } from './components/dashboard/DashboardView';
 import { NetworkView } from './components/network/NetworkView';
 import { WebTerminal } from './components/terminal/WebTerminal';
 import { AgentView } from './components/ai/AgentView';
+import { clientTelegramListener } from './services/client_telegram_listener.service';
+import { sendAiQuery } from './api/ai.api';
 
 export default function App() {
   const [token, setToken] = useState<string | null>(getStoredToken());
@@ -30,6 +32,39 @@ export default function App() {
 
   // Hook nhận luồng thông số phần cứng thời gian thực
   const { staticInfo, metrics, history } = useSystemStats(socket, isConnected);
+
+  // Lắng nghe trực tiếp tin nhắn Telegram từ trình duyệt (Client-side long polling)
+  useEffect(() => {
+    // Kết nối bộ xử lý tin nhắn AI Agent
+    clientTelegramListener.setMessageHandler(async (incoming) => {
+      try {
+        const response = await sendAiQuery({
+          message: incoming.text,
+          systemMetrics: metrics ? {
+            cpuLoad: metrics.cpu.loadPercent,
+            ramUsedPercent: metrics.memory.usedPercent,
+            temperature: metrics.cpu.temperature,
+            uptimeSeconds: metrics.uptime
+          } : undefined,
+          executionMode: 'auto_pilot'
+        });
+
+        if (response.reply) {
+          return response.reply;
+        }
+        return 'Đã xử lý xong yêu cầu của bạn.';
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Lỗi xử lý';
+        return `⚠️ Không thể xử lý yêu cầu lúc này: ${msg}`;
+      }
+    });
+
+    clientTelegramListener.start();
+
+    return () => {
+      clientTelegramListener.stop();
+    };
+  }, [metrics]);
 
   // Xử lý khi đăng nhập thành công
   const handleLoginSuccess = (newToken: string, loggedUser: AuthUser) => {
