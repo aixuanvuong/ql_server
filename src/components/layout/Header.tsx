@@ -15,6 +15,7 @@ import {
   Send
 } from 'lucide-react';
 import { AuthUser } from '../../types/system.types';
+import { PWAInstallButton } from '../pwa/PWAInstallButton';
 
 export type NavTabType = 'monitor' | 'network' | 'agent' | 'terminal';
 
@@ -137,6 +138,9 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right: User & Actions */}
         <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Nút Cài đặt Web App PWA */}
+          <PWAInstallButton />
+
           <div className="hidden sm:block text-right mr-1">
             <div className="text-xs font-semibold text-slate-200 leading-tight">
               {user?.username || 'admin'}

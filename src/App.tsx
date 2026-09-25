@@ -16,6 +16,7 @@ import { WebTerminal } from './components/terminal/WebTerminal';
 import { AgentView } from './components/ai/AgentView';
 import { clientTelegramListener } from './services/client_telegram_listener.service';
 import { sendAiQuery } from './api/ai.api';
+import { OfflineIndicator } from './components/pwa/OfflineIndicator';
 
 export default function App() {
   const [token, setToken] = useState<string | null>(getStoredToken());
@@ -173,6 +174,9 @@ export default function App() {
 
       {/* 3. Thanh điều hướng Tab cố định bên dưới dành cho điện thoại Android */}
       <TabsNav activeTab={activeTab} setActiveTab={setActiveTab} />
+
+      {/* Cảnh báo chế độ Offline PWA */}
+      <OfflineIndicator />
     </div>
   );
 }
