@@ -1,0 +1,7 @@
+{
+  "name": "Ubuntu Remote Monitor & Web SSH",
+  "description": "Giám sát tài nguyên máy chủ Ubuntu thời gian thực và Web-based SSH Terminal trên trình duyệt, tối ưu cho cả máy tính và điện thoại di động.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

@@ -1,0 +1,394 @@
+// filepath: frontend/src/components/terminal/WebTerminal.tsx
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Socket } from 'socket.io-client';
+import { Terminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import { Terminal as TerminalIcon, RotateCcw, Trash2, Maximize2, Minimize2, Settings, Bot, ChevronDown, ChevronUp } from 'lucide-react';
+import { MobileKeyboardBar } from './MobileKeyboardBar';
+import { SshConnectModal } from './SshConnectModal';
+import { SshConfig, DynamicSystemMetrics } from '../../types/system.types';
+import { extractTerminalBuffer } from '../../utils/terminalHelper';
+import { AiChatbox } from '../ai/AiChatbox';
+
+interface WebTerminalProps {
+  socket: Socket | null;
+  isConnected: boolean;
+  metrics?: DynamicSystemMetrics | null;
+}
+
+export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, metrics = null }) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const termRef = useRef<Terminal | null>(null);
+  const fitAddonRef = useRef<FitAddon | null>(null);
+
+  const [terminalStatus, setTerminalStatus] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected');
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [isAiOpen, setIsAiOpen] = useState<boolean>(true);
+  const [demoBuffer, setDemoBuffer] = useState<string>('');
+
+  // Khởi tạo Terminal xterm.js
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    // Cấu hình giao diện chuẩn cho xterm
+    const term = new Terminal({
+      cursorBlink: true,
+      cursorStyle: 'block',
+      fontSize: window.innerWidth < 640 ? 12 : 14,
+      fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+      lineHeight: 1.2,
+      theme: {
+        background: '#090d16',
+        foreground: '#e2e8f0',
+        cursor: '#10b981',
+        selectionBackground: 'rgba(16, 185, 129, 0.3)',
+        black: '#1e293b',
+        red: '#f43f5e',
+        green: '#10b981',
+        yellow: '#f59e0b',
+        blue: '#3b82f6',
+        magenta: '#d946ef',
+        cyan: '#06b6d4',
+        white: '#f8fafc',
+        brightBlack: '#475569',
+        brightRed: '#fb7185',
+        brightGreen: '#34d399',
+        brightYellow: '#fbbf24',
+        brightBlue: '#60a5fa',
+        brightMagenta: '#e879f9',
+        brightCyan: '#22d3ee',
+        brightWhite: '#ffffff'
+      }
+    });
+
+    const fitAddon = new FitAddon();
+    term.loadAddon(fitAddon);
+
+    term.open(containerRef.current);
+    termRef.current = term;
+    fitAddonRef.current = fitAddon;
+
+    // Canh chỉnh kích thước Terminal vừa khớp container
+    try {
+      fitAddon.fit();
+    } catch (e) {
+      // Ignore initial fit timing
+    }
+
+    // In thông điệp chào mừng
+    term.writeln('\x1b[32m╔════════════════════════════════════════════════════════════════╗\x1b[0m');
+    term.writeln('\x1b[32m║        UBUNTU REMOTE MONITOR & WEB-BASED SSH TERMINAL          ║\x1b[0m');
+    term.writeln('\x1b[32m╚════════════════════════════════════════════════════════════════╝\x1b[0m');
+    term.writeln('Gõ lệnh hoặc bấm nút \x1b[33m"Cấu hình SSH"\x1b[0m bên trên để kết nối tới server.');
+    term.writeln('');
+
+    // Xử lý sự kiện gõ phím từ người dùng
+    term.onData((data) => {
+      if (socket && isConnected && socket.connected) {
+        // Gửi ký tự nhập lên máy chủ Ubuntu qua Socket.io
+        socket.emit('terminal:input', data);
+      } else {
+        // Giả lập Shell tương tác khi chạy ở chế độ Standalone / Demo
+        handleLocalShellInput(data, term);
+      }
+    });
+
+    // Lắng nghe sự kiện đổi kích thước màn hình
+    const handleResize = () => {
+      if (fitAddonRef.current && termRef.current) {
+        fitAddonRef.current.fit();
+        const dims = fitAddonRef.current.proposeDimensions();
+        if (dims && socket && isConnected) {
+          socket.emit('terminal:resize', { cols: dims.cols, rows: dims.rows });
+        }
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      term.dispose();
+      termRef.current = null;
+      fitAddonRef.current = null;
+    };
+  }, []);
+
+  // Lắng nghe dữ liệu SSH từ máy chủ truyền về qua Socket.io
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const handleOutput = (data: string) => {
+      if (termRef.current) {
+        termRef.current.write(data);
+      }
+    };
+
+    const handleStatus = (statusData: { status: 'connected' | 'disconnected' | 'connecting'; message?: string }) => {
+      setTerminalStatus(statusData.status);
+      if (statusData.message && termRef.current) {
+        termRef.current.writeln(`\r\n\x1b[36m${statusData.message}\x1b[0m\r\n`);
+      }
+    };
+
+    const handleError = (errorMsg: string) => {
+      if (termRef.current) {
+        termRef.current.write(`\r\n\x1b[31m[Lỗi]: ${errorMsg}\x1b[0m\r\n`);
+      }
+    };
+
+    socket.on('terminal:output', handleOutput);
+    socket.on('terminal:status', handleStatus);
+    socket.on('terminal:error', handleError);
+
+    return () => {
+      socket.off('terminal:output', handleOutput);
+      socket.off('terminal:status', handleStatus);
+      socket.off('terminal:error', handleError);
+    };
+  }, [socket, isConnected]);
+
+  // Xử lý gửi ký tự từ thanh phím ảo trên điện thoại Android
+  const handleVirtualKey = useCallback((code: string) => {
+    if (socket && isConnected && socket.connected) {
+      socket.emit('terminal:input', code);
+    } else if (termRef.current) {
+      handleLocalShellInput(code, termRef.current);
+    }
+    // Giữ focus vào terminal
+    termRef.current?.focus();
+  }, [socket, isConnected]);
+
+  // Bộ mô phỏng Terminal cục bộ (Local Shell Simulator)
+  let cmdBuffer = demoBuffer;
+  const handleLocalShellInput = (char: string, term: Terminal) => {
+    if (char === '\r') {
+      // Enter
+      term.writeln('');
+      const trimmed = cmdBuffer.trim();
+      processDemoCommand(trimmed, term);
+      cmdBuffer = '';
+      setDemoBuffer('');
+      term.write('\x1b[32mubuntu@server:~$ \x1b[0m');
+    } else if (char === '\u007F' || char === '\b') {
+      // Backspace
+      if (cmdBuffer.length > 0) {
+        cmdBuffer = cmdBuffer.slice(0, -1);
+        setDemoBuffer(cmdBuffer);
+        term.write('\b \b');
+      }
+    } else if (char === '\x03') {
+      // Ctrl+C
+      term.writeln('^C');
+      cmdBuffer = '';
+      setDemoBuffer('');
+      term.write('\x1b[32mubuntu@server:~$ \x1b[0m');
+    } else {
+      cmdBuffer += char;
+      setDemoBuffer(cmdBuffer);
+      term.write(char);
+    }
+  };
+
+  const processDemoCommand = (cmd: string, term: Terminal) => {
+    switch (cmd.toLowerCase()) {
+      case 'help':
+        term.writeln('Lệnh mẫu có sẵn trong chế độ giả lập:');
+        term.writeln('  uname -a     - Xem thông tin hệ điều hành Linux');
+        term.writeln('  uptime       - Xem thời gian hoạt động của máy chủ');
+        term.writeln('  free -h      - Xem dung lượng RAM');
+        term.writeln('  df -h        - Xem dung lượng ổ cứng');
+        term.writeln('  whoami       - Tên người dùng hiện tại');
+        term.writeln('  clear        - Xóa trắng màn hình terminal');
+        term.writeln('\x1b[33m* Lưu ý: Kết nối Backend Ubuntu để thực thi toàn bộ lệnh bash thật!\x1b[0m');
+        break;
+      case 'uname -a':
+        term.writeln('Linux ubuntu-production-01 6.8.0-40-generic #40-Ubuntu SMP PREEMPT_DYNAMIC x86_64 GNU/Linux');
+        break;
+      case 'whoami':
+        term.writeln('ubuntu');
+        break;
+      case 'uptime':
+        term.writeln(' 20:25:00 up 5 days, 4:32,  2 users,  load average: 0.24, 0.31, 0.18');
+        break;
+      case 'free -h':
+      case 'free -m':
+        term.writeln('               total        used        free      shared  buff/cache   available');
+        term.writeln('Mem:           7.8Gi       3.2Gi       2.8Gi        42Mi       1.8Gi       4.3Gi');
+        term.writeln('Swap:          2.0Gi          0B       2.0Gi');
+        break;
+      case 'df -h':
+        term.writeln('Filesystem      Size  Used Avail Use% Mounted on');
+        term.writeln('/dev/root        98G   38G   60G  39% /');
+        term.writeln('tmpfs           3.9G     0  3.9G   0% /dev/shm');
+        break;
+      case 'clear':
+        term.clear();
+        break;
+      default:
+        if (cmd) {
+          term.writeln(`bash: ${cmd}: lệnh chưa tìm thấy trong chế độ demo. Kết nối SSH thật để thực thi.`);
+        }
+        break;
+    }
+  };
+
+  // Khởi chạy phiên SSH thực tế
+  const handleConnectSsh = (config: SshConfig) => {
+    setIsModalOpen(false);
+    setTerminalStatus('connecting');
+
+    if (termRef.current) {
+      termRef.current.writeln(`\r\n\x1b[33m[Đang kết nối SSH tới ${config.username}@${config.host}:${config.port}...]\x1b[0m`);
+    }
+
+    if (socket && isConnected) {
+      const dims = fitAddonRef.current?.proposeDimensions();
+      socket.emit('ssh:connect', {
+        ...config,
+        cols: dims?.cols || 80,
+        rows: dims?.rows || 24
+      });
+    } else {
+      setTimeout(() => {
+        setTerminalStatus('connected');
+        if (termRef.current) {
+          termRef.current.writeln(`\x1b[32m[Phiên SSH mô phỏng kết nối thành công: ${config.username}@${config.host}]\x1b[0m\r\n`);
+          termRef.current.write('\x1b[32mubuntu@server:~$ \x1b[0m');
+        }
+      }, 800);
+    }
+  };
+
+  const handleClearTerminal = () => {
+    termRef.current?.clear();
+    termRef.current?.focus();
+  };
+
+  return (
+    <div
+      className={`flex flex-col bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl transition-all ${
+        isFullscreen ? 'fixed inset-0 z-50 rounded-none border-none' : 'h-[580px] sm:h-[620px]'
+      }`}
+    >
+      {/* Terminal Title Bar */}
+      <div className="bg-slate-900 border-b border-slate-800 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2">
+          {/* Terminal Window Dots */}
+          <div className="flex items-center gap-1.5 mr-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+          </div>
+
+          <div className="flex items-center gap-1.5 text-xs font-mono font-medium text-slate-300">
+            <TerminalIcon className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden sm:inline">bash — ubuntu@server</span>
+            <span className="sm:hidden">Web SSH</span>
+          </div>
+
+          {/* Connection Status Badge */}
+          <span
+            className={`text-[10px] px-2 py-0.5 rounded-full font-mono flex items-center gap-1 ${
+              terminalStatus === 'connected'
+                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                : terminalStatus === 'connecting'
+                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                : 'bg-slate-800 text-slate-400 border border-slate-700'
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                terminalStatus === 'connected'
+                  ? 'bg-emerald-400 animate-pulse'
+                  : terminalStatus === 'connecting'
+                  ? 'bg-amber-400 animate-pulse'
+                  : 'bg-slate-500'
+              }`}
+            />
+            {terminalStatus === 'connected'
+              ? 'SSH Online'
+              : terminalStatus === 'connecting'
+              ? 'Đang kết nối'
+              : 'Chưa kết nối'}
+          </span>
+        </div>
+
+        {/* Action Controls */}
+        <div className="flex items-center gap-1 sm:gap-2">
+          <button
+            onClick={() => setIsAiOpen(!isAiOpen)}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer border ${
+              isAiOpen
+                ? 'bg-purple-600/20 text-purple-300 border-purple-500/40'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+            }`}
+            title="Bật/Tắt Trợ lý AI SysAdmin"
+          >
+            <Bot className="w-3.5 h-3.5 text-purple-400" />
+            <span className="hidden sm:inline">Trợ lý AI</span>
+            {isAiOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+          </button>
+
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+            title="Cấu hình Host & Kết nối SSH"
+          >
+            <Settings className="w-3 h-3" />
+            <span className="hidden sm:inline">Cấu hình SSH</span>
+          </button>
+
+          <button
+            onClick={handleClearTerminal}
+            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition-colors cursor-pointer"
+            title="Xóa trắng màn hình terminal (Clear)"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition-colors cursor-pointer"
+            title={isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Main Terminal + AI Workstation Body */}
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        {/* Terminal Container */}
+        <div className={`flex flex-col ${isAiOpen ? 'w-full lg:w-7/12 border-b lg:border-b-0 lg:border-r border-slate-800' : 'w-full'} flex-1 min-h-[340px]`}>
+          <div
+            ref={containerRef}
+            className="flex-1 w-full bg-[#090d16] p-2 overflow-hidden"
+            style={{ minHeight: '280px' }}
+          />
+          {/* Virtual Touch Keyboard for Android Mobile */}
+          <MobileKeyboardBar onSendKey={handleVirtualKey} />
+        </div>
+
+        {/* AI SysAdmin Chatbox Panel */}
+        {isAiOpen && (
+          <div className="w-full lg:w-5/12 h-[380px] lg:h-auto flex flex-col bg-slate-900 overflow-hidden">
+            <AiChatbox
+              getTerminalBuffer={() => extractTerminalBuffer(termRef.current, 60)}
+              metrics={metrics}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Modal SSH Connection Settings */}
+      <SshConnectModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConnect={handleConnectSsh}
+        isConnecting={terminalStatus === 'connecting'}
+      />
+    </div>
+  );
+};
