@@ -14,9 +14,9 @@ export default defineConfig(() => {
         includeAssets: ['icon.svg', 'apple-touch-icon.png'],
         manifest: {
           id: '/',
-          name: 'Ubuntu Remote Monitor & Web SSH',
-          short_name: 'SysMonitor',
-          description: 'Hệ thống giám sát máy chủ Ubuntu thời gian thực, Web SSH Terminal và AI ChatOps Agent.',
+          name: 'Quản Lý Server',
+          short_name: 'Quản Lý Server',
+          description: 'Hệ thống Quản Lý Server: Giám sát phần cứng thời gian thực, Web SSH Terminal và AI Agent.',
           theme_color: '#020617',
           background_color: '#020617',
           display: 'standalone',

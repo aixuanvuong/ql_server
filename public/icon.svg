@@ -1,50 +1,106 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- Dark Tech Radial Gradient Background -->
+    <radialGradient id="bgGrad" cx="50%" cy="40%" r="65%">
       <stop offset="0%" stop-color="#0f172a"/>
-      <stop offset="50%" stop-color="#090d16"/>
+      <stop offset="60%" stop-color="#090d16"/>
       <stop offset="100%" stop-color="#020617"/>
+    </radialGradient>
+
+    <!-- Neon Cyan-Emerald Gradient for Internet & Monitor -->
+    <linearGradient id="cyberCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#10b981"/>
     </linearGradient>
-    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#10b981"/>
-      <stop offset="100%" stop-color="#059669"/>
+
+    <linearGradient id="screenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#090d16"/>
+      <stop offset="100%" stop-color="#030712"/>
     </linearGradient>
-    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#a855f7"/>
-      <stop offset="100%" stop-color="#6366f1"/>
-    </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+
+    <!-- Glowing Filters -->
+    <filter id="cyanGlow" x="-30%" y="-30%" width="160%" height="160%">
       <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <filter id="intenseGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
       <feComposite in="SourceGraphic" in2="blur" operator="over"/>
     </filter>
   </defs>
 
-  <!-- Background rounded rect -->
+  <!-- 1. Background Rounded Tile -->
   <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+  <rect width="504" height="504" x="4" y="4" rx="108" fill="none" stroke="#1e293b" stroke-width="4"/>
+
+  <!-- 2. Cyber Globe / Internet Orbit Rings in Background -->
+  <g opacity="0.4" stroke="url(#cyberCyan)" stroke-width="2" fill="none">
+    <!-- Globe Circle -->
+    <circle cx="256" cy="186" r="148" stroke-dasharray="6 6"/>
+    <!-- Latitude Lines -->
+    <ellipse cx="256" cy="186" rx="148" ry="60"/>
+    <ellipse cx="256" cy="186" rx="148" ry="110"/>
+    <!-- Longitude Lines -->
+    <ellipse cx="256" cy="186" rx="60" ry="148"/>
+    <line x1="256" y1="38" x2="256" y2="334"/>
+    <line x1="108" y1="186" x2="404" y2="186"/>
+  </g>
+
+  <!-- Satellite / Global Network Nodes Pulsing -->
+  <g filter="url(#cyanGlow)">
+    <circle cx="130" cy="120" r="7" fill="#38bdf8"/>
+    <circle cx="382" cy="120" r="7" fill="#10b981"/>
+    <circle cx="400" cy="240" r="6" fill="#06b6d4"/>
+    <circle cx="112" cy="240" r="6" fill="#3b82f6"/>
+    <line x1="130" y1="120" x2="190" y2="140" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="4 4" opacity="0.8"/>
+    <line x1="382" y1="120" x2="322" y2="140" stroke="#10b981" stroke-width="2.5" stroke-dasharray="4 4" opacity="0.8"/>
+  </g>
+
+  <!-- 3. Desktop Computer / Server Monitor -->
+  <!-- Monitor Outer Frame with Cyan Edge -->
+  <rect x="96" y="90" width="320" height="214" rx="20" fill="#0b1120" stroke="url(#cyberCyan)" stroke-width="5" filter="url(#cyanGlow)"/>
+
+  <!-- Monitor Inner Screen -->
+  <rect x="110" y="104" width="292" height="186" rx="12" fill="url(#screenGrad)"/>
+
+  <!-- Screen Content: Realtime Server Graphs & Terminal Prompt -->
+  <!-- Top Bar of Terminal -->
+  <circle cx="128" cy="122" r="4.5" fill="#ef4444"/>
+  <circle cx="142" cy="122" r="4.5" fill="#f59e0b"/>
+  <circle cx="156" cy="122" r="4.5" fill="#10b981"/>
+  <line x1="172" y1="122" x2="240" y2="122" stroke="#334155" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Active Waveform / Pulse Graph on Screen (Server Activity) -->
+  <path d="M 124 200 L 160 200 L 176 170 L 194 225 L 214 150 L 234 235 L 254 185 L 274 200 L 388 200" 
+        fill="none" stroke="#10b981" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#cyanGlow)"/>
+
+  <!-- Glowing Ping Spot on Graph -->
+  <circle cx="214" cy="150" r="6" fill="#38bdf8" filter="url(#intenseGlow)"/>
+
+  <!-- Terminal Code Line -->
+  <path d="M 126 150 L 138 160 L 126 170" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="148" y1="170" x2="175" y2="170" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- 4. Monitor Stand -->
+  <path d="M 232 304 L 222 360 L 290 360 L 280 304 Z" fill="#1e293b" stroke="#334155" stroke-width="3"/>
+
+  <!-- Monitor Base (Desk Plate) -->
+  <rect x="180" y="356" width="152" height="14" rx="7" fill="#0f172a" stroke="url(#cyberCyan)" stroke-width="3.5"/>
+
+  <!-- 5. Internet Connection Cable & High-Speed Optical Flow -->
+  <!-- Glowing Data Waves emanating downward / upward connecting the Server to Cloud -->
+  <path d="M 256 370 L 256 420 C 256 450 340 440 370 470" fill="none" stroke="url(#cyberCyan)" stroke-width="5" stroke-linecap="round" stroke-dasharray="6 6" filter="url(#cyanGlow)"/>
   
-  <!-- Subtle border -->
-  <rect width="504" height="504" x="4" y="4" rx="108" fill="none" stroke="#1e293b" stroke-width="6"/>
+  <path d="M 256 370 L 256 420 C 256 450 172 440 142 470" fill="none" stroke="url(#cyberCyan)" stroke-width="5" stroke-linecap="round" stroke-dasharray="6 6" filter="url(#cyanGlow)"/>
 
-  <!-- Server Rack Shape -->
-  <g transform="translate(96, 96)">
-    <!-- Top Rack Unit -->
-    <rect x="0" y="20" width="320" height="74" rx="18" fill="#1e293b" stroke="#334155" stroke-width="4"/>
-    <circle cx="44" cy="57" r="9" fill="#10b981" filter="url(#glow)"/>
-    <circle cx="76" cy="57" r="9" fill="#06b6d4"/>
-    <circle cx="108" cy="57" r="9" fill="#8b5cf6"/>
-    <line x1="160" y1="57" x2="280" y2="57" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
-
-    <!-- Middle Rack Unit -->
-    <rect x="0" y="122" width="320" height="74" rx="18" fill="#1e293b" stroke="#334155" stroke-width="4"/>
-    <circle cx="44" cy="159" r="9" fill="#10b981" filter="url(#glow)"/>
-    <circle cx="76" cy="159" r="9" fill="#10b981" filter="url(#glow)"/>
-    <circle cx="108" cy="159" r="9" fill="#f59e0b"/>
-    <line x1="160" y1="159" x2="280" y2="159" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
-
-    <!-- Bottom Rack Unit with Terminal Prompt -->
-    <rect x="0" y="224" width="320" height="74" rx="18" fill="#0f172a" stroke="#10b981" stroke-width="4" filter="url(#glow)"/>
-    <path d="M 38 248 L 56 261 L 38 274" fill="none" stroke="#10b981" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-    <line x1="72" y1="274" x2="106" y2="274" stroke="#a855f7" stroke-width="6" stroke-linecap="round"/>
-    <circle cx="276" cy="261" r="10" fill="#10b981" filter="url(#glow)"/>
+  <!-- Cloud / Global Internet Hub Icon at Bottom Center -->
+  <g transform="translate(216, 400)" filter="url(#intenseGlow)">
+    <!-- Globe / Internet Icon -->
+    <circle cx="40" cy="40" r="32" fill="#0b1120" stroke="url(#cyberCyan)" stroke-width="4"/>
+    <ellipse cx="40" cy="40" rx="14" ry="32" fill="none" stroke="#38bdf8" stroke-width="3"/>
+    <line x1="8" y1="40" x2="72" y2="40" stroke="#38bdf8" stroke-width="3"/>
+    <circle cx="40" cy="40" r="6" fill="#10b981"/>
   </g>
 </svg>

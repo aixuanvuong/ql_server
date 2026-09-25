@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { AuthUser } from '../../types/system.types';
 import { PWAInstallButton } from '../pwa/PWAInstallButton';
+import { ComputerInternetLogo } from '../common/ComputerInternetLogo';
 
 export type NavTabType = 'monitor' | 'network' | 'agent' | 'terminal';
 
@@ -47,13 +48,13 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
         {/* Left: Logo & Hostname */}
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0 shadow-inner">
-            <Server className="w-5 h-5" />
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 shadow-lg shadow-cyan-950/50 border border-cyan-500/30">
+            <ComputerInternetLogo size={40} className="w-full h-full" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-bold text-white text-xs sm:text-base leading-none tracking-tight truncate">
-                Ubuntu Monitor
+              <span className="font-bold text-white text-xs sm:text-base leading-none tracking-tight truncate flex items-center gap-1">
+                <span>Quản Lý Server</span>
               </span>
               <span className="hidden lg:inline-block text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-mono truncate max-w-[120px]">
                 {hostname}

@@ -1,8 +1,9 @@
 // filepath: frontend/src/components/auth/LoginForm.tsx
 import React, { useState } from 'react';
-import { Server, Lock, User, Globe, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Lock, User, Globe, AlertCircle, ShieldCheck } from 'lucide-react';
 import { loginUser, getStoredServerUrl } from '../../api/auth.api';
 import { AuthUser } from '../../types/system.types';
+import { ComputerInternetLogo } from '../common/ComputerInternetLogo';
 
 interface LoginFormProps {
   onLoginSuccess: (token: string, user: AuthUser) => void;
@@ -35,14 +36,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
         {/* Header Icon & Title */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 mb-3">
-            <Server className="w-7 h-7" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl overflow-hidden mb-3 border border-cyan-500/30 shadow-xl shadow-cyan-950/50">
+            <ComputerInternetLogo size={64} className="w-full h-full" />
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-            Ubuntu Remote Monitor
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center justify-center gap-1.5">
+            <span>Quản Lý Server</span>
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Đăng nhập để giám sát phần cứng & Web SSH Terminal
+            Đăng nhập để giám sát máy chủ từ xa & Web SSH Terminal
           </p>
         </div>
 

@@ -2,64 +2,116 @@ import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
 
-function createPNG(width, height, r, g, b, a = 255) {
-  // Signature
+function createPNG(width, height) {
   const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
-  // IHDR Chunk
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(width, 0);
   ihdr.writeUInt32BE(height, 4);
-  ihdr.writeUInt8(8, 8); // bit depth 8
-  ihdr.writeUInt8(6, 9); // RGBA color type
-  ihdr.writeUInt8(0, 10); // compression
-  ihdr.writeUInt8(0, 11); // filter
-  ihdr.writeUInt8(0, 12); // interlace
+  ihdr.writeUInt8(8, 8); // 8-bit depth
+  ihdr.writeUInt8(6, 9); // RGBA
+  ihdr.writeUInt8(0, 10);
+  ihdr.writeUInt8(0, 11);
+  ihdr.writeUInt8(0, 12);
 
   const ihdrChunk = makeChunk('IHDR', ihdr);
 
-  // Raw Image Data (filter byte 0 per line)
   const lineSize = 1 + width * 4;
   const rawData = Buffer.alloc(lineSize * height);
 
+  const cx = width / 2;
+  const cy = height / 2;
+
   for (let y = 0; y < height; y++) {
     const lineOffset = y * lineSize;
-    rawData[lineOffset] = 0; // Filter type: None
+    rawData[lineOffset] = 0; // Filter: None
 
     for (let x = 0; x < width; x++) {
       const pixelOffset = lineOffset + 1 + x * 4;
 
-      // Draw rounded background and server graphic
-      const cx = width / 2;
-      const cy = height / 2;
-      const dx = Math.abs(x - cx);
-      const dy = Math.abs(y - cy);
+      // Base background: #090d16
+      let r = 9;
+      let g = 13;
+      let b = 22;
+      let a = 255;
+
+      const normX = x / width;
+      const normY = y / height;
 
       // Distance from center
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      const dx = (x - cx) / cx;
+      const dy = (y - cy) / cy;
+      const distFromCenter = Math.sqrt(dx * dx + dy * dy);
 
-      // Color computation
-      let pr = 15; // #0f172a
-      let pg = 23;
-      let pb = 42;
-      let pa = 255;
+      // 1. Globe latitude/longitude subtle grid lines (Internet representation)
+      if (Math.abs(distFromCenter - 0.7) < 0.02 || Math.abs(distFromCenter - 0.45) < 0.015) {
+        r = 14; g = 116; b = 144; // Cyan orbit ring
+      }
 
-      // Server center badge
-      if (Math.abs(x - cx) < width * 0.32 && Math.abs(y - cy) < height * 0.32) {
-        // Accent rack unit
-        if (Math.abs(y - cy) < height * 0.08) {
-          pr = 16; pg = 185; pb = 129; // Emerald #10b981
-        } else if (y > cy) {
-          pr = 168; pg = 85; pb = 247; // Purple #a855f7
-        } else {
-          pr = 6; pg = 182; pb = 212; // Cyan #06b6d4
+      // 2. Computer Monitor Frame (normX: 0.20 to 0.80, normY: 0.18 to 0.62)
+      const inMonitorFrame = (normX >= 0.20 && normX <= 0.80 && normY >= 0.18 && normY <= 0.62);
+      const isMonitorBorder = inMonitorFrame && (
+        normX < 0.23 || normX > 0.77 || normY < 0.21 || normY > 0.59
+      );
+      const inMonitorScreen = (normX >= 0.23 && normX <= 0.77 && normY >= 0.21 && normY <= 0.59);
+
+      if (isMonitorBorder) {
+        // Cyan-emerald glowing edge
+        r = 6; g = 182; b = 212;
+      } else if (inMonitorScreen) {
+        // Deep screen black
+        r = 3; g = 7; b = 18;
+
+        // Waveform/pulse on screen (Server activity)
+        const waveY = 0.40 + Math.sin(normX * 25) * 0.07 * (normX > 0.35 && normX < 0.65 ? 1.5 : 0.4);
+        if (Math.abs(normY - waveY) < 0.018) {
+          r = 16; g = 185; b = 129; // Emerald green activity line
+        }
+
+        // Terminal prompt mark
+        if (normX >= 0.26 && normX <= 0.32 && Math.abs(normY - 0.28) < 0.015) {
+          r = 56; g = 189; b = 248; // Cyan terminal
         }
       }
 
-      rawData[pixelOffset] = pr;
-      rawData[pixelOffset + 1] = pg;
-      rawData[pixelOffset + 2] = pb;
-      rawData[pixelOffset + 3] = pa;
+      // 3. Monitor Stand
+      const inStand = (normX >= 0.45 && normX <= 0.55 && normY >= 0.62 && normY <= 0.73);
+      if (inStand) {
+        r = 30; g = 41; b = 59;
+      }
+
+      // Monitor Base Plate
+      const inBasePlate = (normX >= 0.36 && normX <= 0.64 && normY >= 0.73 && normY <= 0.76);
+      if (inBasePlate) {
+        r = 6; g = 182; b = 212; // Cyan base
+      }
+
+      // 4. Internet Globe Hub at Bottom (Connecting Cable + Globe Hub)
+      // Vertical optical data cable connecting down
+      if (Math.abs(normX - 0.5) < 0.015 && normY >= 0.76 && normY <= 0.83) {
+        r = 56; g = 189; b = 248;
+      }
+
+      // Globe circle (normX 0.42 to 0.58, normY 0.82 to 0.96)
+      const gcx = 0.5;
+      const gcy = 0.88;
+      const gdist = Math.sqrt(Math.pow((normX - gcx) * 1.2, 2) + Math.pow(normY - gcy, 2));
+
+      if (Math.abs(gdist - 0.08) < 0.016) {
+        r = 16; g = 185; b = 129; // Emerald Globe edge
+      } else if (gdist < 0.08) {
+        // Globe interior with equator and meridian
+        if (Math.abs(normY - gcy) < 0.012 || Math.abs(normX - gcx) < 0.012) {
+          r = 56; g = 189; b = 248; // Bright cyan latitude/longitude
+        } else {
+          r = 8; g = 47; b = 73;
+        }
+      }
+
+      rawData[pixelOffset] = r;
+      rawData[pixelOffset + 1] = g;
+      rawData[pixelOffset + 2] = b;
+      rawData[pixelOffset + 3] = a;
     }
   }
 
@@ -82,7 +134,6 @@ function makeChunk(type, data) {
   return buf;
 }
 
-// CRC32 table & computation
 const crcTable = [];
 for (let n = 0; n < 256; n++) {
   let c = n;
@@ -105,13 +156,9 @@ function crc32(buf) {
 }
 
 const publicDir = path.resolve('public');
-if (!fs.existsSync(publicDir)) {
-  fs.mkdirSync(publicDir, { recursive: true });
-}
+fs.writeFileSync(path.join(publicDir, 'pwa-192x192.png'), createPNG(192, 192));
+fs.writeFileSync(path.join(publicDir, 'pwa-512x512.png'), createPNG(512, 512));
+fs.writeFileSync(path.join(publicDir, 'pwa-maskable-512x512.png'), createPNG(512, 512));
+fs.writeFileSync(path.join(publicDir, 'apple-touch-icon.png'), createPNG(180, 180));
 
-fs.writeFileSync(path.join(publicDir, 'pwa-192x192.png'), createPNG(192, 192, 16, 185, 129));
-fs.writeFileSync(path.join(publicDir, 'pwa-512x512.png'), createPNG(512, 512, 16, 185, 129));
-fs.writeFileSync(path.join(publicDir, 'pwa-maskable-512x512.png'), createPNG(512, 512, 15, 23, 42));
-fs.writeFileSync(path.join(publicDir, 'apple-touch-icon.png'), createPNG(180, 180, 16, 185, 129));
-
-console.log('PWA PNG Icons generated successfully in public/');
+console.log('Generated Computer-Internet PWA icons successfully!');

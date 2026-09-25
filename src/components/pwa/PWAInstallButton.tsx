@@ -33,7 +33,7 @@ export const PWAInstallButton: React.FC = () => {
           }
         }}
         disabled={installing}
-        title="Cài đặt ứng dụng Ubuntu Monitor về màn hình chính của thiết bị"
+        title="Cài đặt ứng dụng Quản Lý Server về màn hình chính của thiết bị"
         className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium text-xs shadow-lg shadow-emerald-950/40 border border-emerald-400/30 transition-all transform active:scale-95 cursor-pointer"
       >
         <Download className="w-3.5 h-3.5 animate-bounce" />
