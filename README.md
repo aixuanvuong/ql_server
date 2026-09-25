@@ -38,7 +38,7 @@ Sau khi cài đặt xong, bất cứ khi nào mở Terminal máy chủ, bạn ch
 sudo quanlysv
 ```
 
-Giao diện Menu trực quan sẽ xuất hiện với 4 tính năng:
+Giao diện Menu trực quan sẽ xuất hiện với 5 tính năng:
 
 ```text
 ╔══════════════════════════════════════════════════════════════════╗
@@ -47,7 +47,7 @@ Giao diện Menu trực quan sẽ xuất hiện với 4 tính năng:
 ╚══════════════════════════════════════════════════════════════════╝
 
   [1] Xem tình trạng ứng dụng đang chạy hay chưa
-      (Kiểm tra Backend PM2, Web Server Nginx, Cloudflare Tunnel, Link URL)
+      (Kiểm tra Backend PM2, Web Server Nginx, Cổng Port, Cloudflare Tunnel, Link URL)
 
   [2] Cập nhật phiên bản mới từ GitHub
       (Tự động git pull, build lại Frontend, cập nhật gói và restart)
@@ -55,7 +55,10 @@ Giao diện Menu trực quan sẽ xuất hiện với 4 tính năng:
   [3] Thay đổi tên miền / Cloudflare Tunnel
       (Cập nhật Cloudflare Tunnel Token, đổi tên miền riêng)
 
-  [4] Xóa toàn bộ dự án ra khỏi máy chủ (Uninstall)
+  [4] Thay đổi cổng truy cập hệ thống (Web Port)
+      (Tự do đổi sang bất kỳ cổng nào: 80, 8080, 8888, 3000...)
+
+  [5] Xóa toàn bộ dự án ra khỏi máy chủ (Uninstall)
       (Gỡ bỏ PM2, Nginx config, Cloudflare daemon và xóa sạch thư mục)
 
   [0] Thoát (Exit)

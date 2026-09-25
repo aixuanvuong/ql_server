@@ -50,6 +50,9 @@ DEFAULT_PASS=$(openssl rand -base64 9 | tr -dc 'a-zA-Z0-9' | head -c 10)
 read -p "Mật khẩu Admin [Mặc định: $DEFAULT_PASS]: " INPUT_PASS
 ADMIN_PASS=${INPUT_PASS:-$DEFAULT_PASS}
 
+read -p "Cổng truy cập Web cho hệ thống (Web Port) [Mặc định: 80]: " INPUT_WEB_PORT
+WEB_PORT=${INPUT_WEB_PORT:-80}
+
 read -p "Google Gemini API Key (Bấm Enter để bỏ qua nếu chưa có): " INPUT_GEMINI
 GEMINI_KEY=${INPUT_GEMINI:-""}
 
@@ -124,6 +127,7 @@ cd "$INSTALL_DIR/backend" || cd "$INSTALL_DIR"
 
 cat << EOF > .env
 PORT=${BACKEND_PORT}
+WEB_PORT=${WEB_PORT}
 JWT_SECRET=${JWT_SECRET}
 JWT_EXPIRES_IN=24h
 ADMIN_USERNAME=${ADMIN_USER}
@@ -160,14 +164,14 @@ elif [ -d "build" ]; then
   cp -r build/* "$WEB_ROOT/"
 fi
 
-# 9. Cấu hình Nginx (Lắng nghe cục bộ 127.0.0.1:80 để Cloudflare Tunnel chuyển tiếp vào)
+# 9. Cấu hình Nginx (Lắng nghe cổng WEB_PORT đã chọn)
 echo ""
-echo -e "${YELLOW}🌐 BƯỚC 7: CẤU HÌNH NGINX REVERSE PROXY NỘI BỘ...${NC}"
+echo -e "${YELLOW}🌐 BƯỚC 7: CẤU HÌNH NGINX REVERSE PROXY NỘI BỘ (CỔNG ${WEB_PORT})...${NC}"
 NGINX_CONF="/etc/nginx/sites-available/ql_server"
 cat << EOF > "$NGINX_CONF"
 server {
-    listen 80;
-    listen 127.0.0.1:80;
+    listen ${WEB_PORT};
+    listen 127.0.0.1:${WEB_PORT};
     server_name _;
 
     # 1. Giao diện Frontend tĩnh
@@ -234,17 +238,17 @@ if [ -n "$CF_TUNNEL_TOKEN" ]; then
   PUBLIC_URL="https://[Tên miền bạn đã gán trên Cloudflare Dashboard]"
   echo -e "${GREEN}✓ Cloudflare Tunnel Service đã được kích hoạt thành công!${NC}"
 else
-  # Tạo một service Quick Tunnel (chạy ngầm tự động qua systemd)
-  echo -e "${CYAN}→ Khởi động Cloudflare Quick Tunnel tự động (Miễn phí, không cần cấu hình)...${NC}"
+  # Tạo một service Quick Tunnel (chạy ngầm tự động qua systemd trỏ vào cổng WEB_PORT)
+  echo -e "${CYAN}→ Khởi động Cloudflare Quick Tunnel tự động (trỏ vào cổng ${WEB_PORT})...${NC}"
   
-  cat << 'EOF' > /etc/systemd/system/cloudflared-quick.service
+  cat << EOF > /etc/systemd/system/cloudflared-quick.service
 [Unit]
 Description=Cloudflare Quick Tunnel for QL Server
 After=network.target nginx.service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/cloudflared tunnel --url http://127.0.0.1:80
+ExecStart=/usr/local/bin/cloudflared tunnel --url http://127.0.0.1:${WEB_PORT}
 StandardOutput=append:/var/log/cloudflared-quick.log
 StandardError=append:/var/log/cloudflared-quick.log
 Restart=always
@@ -255,28 +259,27 @@ WantedBy=multi-user.target
 EOF
 
   # Copy cloudflared vào /usr/local/bin nếu cần
-  cp $(which cloudflared) /usr/local/bin/cloudflared 2>/dev/null || true
+  cp \$(which cloudflared) /usr/local/bin/cloudflared 2>/dev/null || true
   systemctl daemon-reload
   systemctl restart cloudflared-quick.service
   systemctl enable cloudflared-quick.service
 
   # Đợi 3 giây để lấy URL từ log
   sleep 4
-  QUICK_URL=$(grep -o 'https://[-a-zA-Z0-9@:%._\+~#=]*.trycloudflare.com' /var/log/cloudflared-quick.log | tail -n 1 || true)
-  if [ -n "$QUICK_URL" ]; then
-    PUBLIC_URL="$QUICK_URL"
+  QUICK_URL=\$(grep -o 'https://[-a-zA-Z0-9@:%._\+~#=]*.trycloudflare.com' /var/log/cloudflared-quick.log | tail -n 1 || true)
+  if [ -n "\$QUICK_URL" ]; then
+    PUBLIC_URL="\$QUICK_URL"
   else
     PUBLIC_URL="Xem trong lệnh: cat /var/log/cloudflared-quick.log"
   fi
 fi
 
-# 12. Tường lửa an toàn: KHÔNG MỞ CỔNG 80/5000 RA INTERNET
+# 12. Tường lửa an toàn: Mở cổng WEB_PORT nếu cần truy cập LAN
 echo ""
 echo -e "${YELLOW}🛡️ BƯỚC 10: THIẾT LẬP BẢO MẬT TƯỜNG LỬA (ZERO OPEN PORTS)...${NC}"
 # Chỉ cần giữ cổng SSH nếu cần, cổng Web được bảo vệ an toàn qua Cloudflare Tunnel
 ufw allow 22/tcp comment 'SSH Port' >/dev/null 2>&1 || true
-# Có thể mở cổng nội bộ 80 nếu muốn truy cập từ mạng LAN
-ufw allow 80/tcp comment 'Local HTTP' >/dev/null 2>&1 || true
+ufw allow ${WEB_PORT}/tcp comment "QL Server Web Port ${WEB_PORT}" >/dev/null 2>&1 || true
 
 # 13. Cài đặt tiện ích quản lý CLI: quanlysv
 echo ""
@@ -288,27 +291,39 @@ if [ -f "$INSTALL_DIR/scripts/quanlysv.sh" ]; then
 fi
 
 # 14. Xuất thông tin hoàn tất
+LOCAL_IP=\$(hostname -I | awk '{print \$1}')
+
+if [ "$WEB_PORT" = "80" ]; then
+  PORT_SUFFIX=""
+else
+  PORT_SUFFIX=":${WEB_PORT}"
+fi
+
 echo ""
 echo -e "${GREEN}========================================================================${NC}"
-echo -e "${GREEN}${BOLD}      🎉 CHÚC MỪNG! HỆ THỐNG ĐÃ KẾT NỐI CLOUDFLARE TUNNEL THÀNH CÔNG!     ${NC}"
+echo -e "${GREEN}${BOLD}           🎉 CHÚC MỪNG! HỆ THỐNG ĐÃ CÀI ĐẶT THÀNH CÔNG! 🎉             ${NC}"
 echo -e "${GREEN}========================================================================${NC}"
 echo ""
-echo -e "🌐 ${BOLD}ĐỊA CHỈ TRUY CẬP INTERNET (HTTPS TỰ ĐỘNG, KHÔNG MỞ CỔNG):${NC}"
+echo -e "🏠 ${BOLD}ĐỊA CHỈ TRUY CẬP NỘI BỘ (LOCAL / MẠNG LAN):${NC}"
+echo -e "   • Trên máy chủ này  : ${CYAN}${BOLD}http://localhost\${PORT_SUFFIX}${NC} hoặc ${CYAN}${BOLD}http://127.0.0.1\${PORT_SUFFIX}${NC}"
+echo -e "   • Từ máy khác trong LAN (Wifi): ${CYAN}${BOLD}http://\${LOCAL_IP}\${PORT_SUFFIX}${NC}"
+echo -e "   • Cổng Web đã cài đặt: ${GREEN}${BOLD}${WEB_PORT}${NC}"
+echo -e "   • Cổng Backend Node : ${GREEN}${BOLD}5000${NC} (API & WebSocket nội bộ 127.0.0.1:5000)"
+echo ""
+echo -e "🌐 ${BOLD}ĐỊA CHỈ TRUY CẬP TỪ XA QUA INTERNET (CLOUDFLARE TUNNEL - HTTPS):${NC}"
 echo -e "   👉 ${CYAN}${BOLD}${PUBLIC_URL}${NC}"
+echo -e "   (Không cần mở cổng modem/router, tự động có HTTPS bảo mật)"
 echo ""
-echo -e "🔑 ${BOLD}THÔNG TIN ĐĂNG NHẬP:${NC}"
+echo -e "🔑 ${BOLD}THÔNG TIN ĐĂNG NHẬP DASHBOARD:${NC}"
 echo -e "   • Tên đăng nhập: ${GREEN}${ADMIN_USER}${NC}"
 echo -e "   • Mật khẩu     : ${YELLOW}${BOLD}${ADMIN_PASS}${NC}"
 echo ""
-echo -e "🛠️  ${BOLD}LỆNH QUẢN LÝ DỰ ÁN QUA MENU INTERACTIVE:${NC}"
-echo -e "   Từ bất kỳ đâu trên Terminal, chỉ cần gõ: ${CYAN}${BOLD}quanlysv${NC}"
-echo -e "   (Bao gồm: Kiểm tra trạng thái, Cập nhật code, Đổi tên miền, Gỡ cài đặt)"
-echo ""
-echo -e "☁️  ${BOLD}CÁCH GÁN TÊN MIỀN RIÊNG BẤT CỨ LÚC NÀO:${NC}"
-echo -e "   Chạy lệnh ${CYAN}quanlysv${NC} > Chọn [3] > Dán Cloudflare Tunnel Token."
+echo -e "🛠️  ${BOLD}LỆNH QUẢN TRỊ DỰ ÁN QUA MENU (QUANLYSV):${NC}"
+echo -e "   Từ bất kỳ đâu trên Terminal, chỉ cần gõ: ${CYAN}${BOLD}sudo quanlysv${NC}"
+echo -e "   (Xem tình trạng port, cập nhật code, đổi tên miền, gỡ cài đặt)"
 echo ""
 echo -e "📱 ${BOLD}MẸO DÙNG TRÊN ĐIỆN THOẠI ANDROID:${NC}"
-echo -e "   Mở Chrome trên điện thoại > truy cập link HTTPS ở trên >"
+echo -e "   Mở Chrome trên điện thoại > truy cập link ở trên >"
 echo -e "   Bấm Menu (3 chấm) > chọn ${CYAN}'Thêm vào Màn hình chính'${NC} để dùng như App!"
 echo ""
 echo -e "${PURPLE}========================================================================${NC}"

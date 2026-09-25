@@ -77,9 +77,30 @@ show_status() {
     echo -e "   • Trạng thái: ${RED}${BOLD}● KHÔNG HOẠT ĐỘNG${NC}"
   fi
 
-  # 4. Thông tin tài khoản đăng nhập đã lưu trong .env
+  # 4. Cổng mạng & Địa chỉ truy cập nội bộ (Local / LAN)
+  LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+  CURRENT_WEB_PORT=$(grep -E '^WEB_PORT=' "$INSTALL_DIR/backend/.env" 2>/dev/null | cut -d '=' -f2)
+  if [ -z "$CURRENT_WEB_PORT" ]; then
+    CURRENT_WEB_PORT=$(grep -oE 'listen [0-9]+;' "$NGINX_CONF" 2>/dev/null | head -n 1 | awk '{print $2}' | tr -d ';')
+  fi
+  CURRENT_WEB_PORT=${CURRENT_WEB_PORT:-80}
+
+  if [ "$CURRENT_WEB_PORT" = "80" ]; then
+    PORT_SFX=""
+  else
+    PORT_SFX=":${CURRENT_WEB_PORT}"
+  fi
+
   echo ""
-  echo -e "${YELLOW}4. Thông tin tài khoản Admin Dashboard:${NC}"
+  echo -e "${YELLOW}4. Cổng mạng & Địa chỉ truy cập nội bộ (Local / LAN):${NC}"
+  echo -e "   • Cổng Web Nginx (Frontend) : ${GREEN}${BOLD}${CURRENT_WEB_PORT}${NC}"
+  echo -e "   • Truy cập máy chủ này      : ${CYAN}http://localhost${PORT_SFX}${NC} hoặc ${CYAN}http://127.0.0.1${PORT_SFX}${NC}"
+  echo -e "   • Truy cập qua mạng LAN/Wifi: ${CYAN}http://${LOCAL_IP}${PORT_SFX}${NC}"
+  echo -e "   • Cổng Backend (Node.js)    : ${GREEN}${BOLD}5000${NC} (API nội bộ: http://127.0.0.1:5000)"
+
+  # 5. Thông tin tài khoản đăng nhập đã lưu trong .env
+  echo ""
+  echo -e "${YELLOW}5. Thông tin tài khoản Admin Dashboard:${NC}"
   if [ -f "$INSTALL_DIR/backend/.env" ]; then
     ADMIN_USER=$(grep -E '^ADMIN_USERNAME=' "$INSTALL_DIR/backend/.env" | cut -d '=' -f2)
     echo -e "   • Tên đăng nhập : ${GREEN}${ADMIN_USER}${NC}"
@@ -219,7 +240,85 @@ change_domain() {
 }
 
 # ------------------------------------------------------------------------------
-# MỤC 4: XÓA TOÀN BỘ DỰ ÁN RA KHỎI MÁY CHỦ (UNINSTALL)
+# MỤC 4: THAY ĐỔI CỔNG TRUY CẬP HỆ THỐNG (WEB PORT)
+# ------------------------------------------------------------------------------
+change_port() {
+  clear
+  echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════════╗${NC}"
+  echo -e "${PURPLE}║${CYAN}${BOLD}         🔌 THAY ĐỔI CỔNG TRUY CẬP HỆ THỐNG (WEB PORT)          ${NC}${PURPLE}║${NC}"
+  echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════════╝${NC}"
+  echo ""
+
+  CURRENT_PORT=$(grep -E '^WEB_PORT=' "$INSTALL_DIR/backend/.env" 2>/dev/null | cut -d '=' -f2)
+  if [ -z "$CURRENT_PORT" ]; then
+    CURRENT_PORT=$(grep -oE 'listen [0-9]+;' "$NGINX_CONF" 2>/dev/null | head -n 1 | awk '{print $2}' | tr -d ';')
+  fi
+  CURRENT_PORT=${CURRENT_PORT:-80}
+
+  echo -e "Cổng Web hiện tại đang sử dụng: ${GREEN}${BOLD}${CURRENT_PORT}${NC}"
+  echo ""
+  read -p "Nhập cổng Web mới bạn muốn đổi sang (ví dụ: 80, 8080, 8888, 3000): " NEW_PORT
+
+  # Kiểm tra tính hợp lệ của số cổng (1 - 65535)
+  if ! [[ "$NEW_PORT" =~ ^[0-9]+$ ]] || [ "$NEW_PORT" -lt 1 ] || [ "$NEW_PORT" -gt 65535 ]; then
+    echo -e "${RED}[Lỗi]: Cổng phải là số nguyên hợp lệ trong khoảng 1 đến 65535!${NC}"
+    read -p "Nhấn [Enter] để quay lại..."
+    return
+  fi
+
+  echo ""
+  echo -e "${CYAN}→ Đang cập nhật cấu hình Nginx sang cổng ${NEW_PORT}...${NC}"
+  sed -i -E "s/listen [0-9]+;/listen ${NEW_PORT};/g" "$NGINX_CONF"
+  sed -i -E "s/listen 127.0.0.1:[0-9]+;/listen 127.0.0.1:${NEW_PORT};/g" "$NGINX_CONF"
+
+  # Cập nhật trong file .env
+  if grep -q '^WEB_PORT=' "$INSTALL_DIR/backend/.env"; then
+    sed -i -E "s/^WEB_PORT=.*/WEB_PORT=${NEW_PORT}/g" "$INSTALL_DIR/backend/.env"
+  else
+    echo "WEB_PORT=${NEW_PORT}" >> "$INSTALL_DIR/backend/.env"
+  fi
+
+  # Cập nhật Cloudflare Quick Tunnel nếu có
+  if [ -f "/etc/systemd/system/cloudflared-quick.service" ]; then
+    echo -e "${CYAN}→ Cập nhật Cloudflare Quick Tunnel chuyển tiếp vào cổng ${NEW_PORT}...${NC}"
+    sed -i -E "s|--url http://127.0.0.1:[0-9]+|--url http://127.0.0.1:${NEW_PORT}|g" /etc/systemd/system/cloudflared-quick.service
+    systemctl daemon-reload
+    systemctl restart cloudflared-quick.service 2>/dev/null || true
+  fi
+
+  # Mở cổng mới trên tường lửa UFW
+  ufw allow ${NEW_PORT}/tcp comment "QL Server Web Port ${NEW_PORT}" >/dev/null 2>&1 || true
+
+  # Kiểm tra cú pháp Nginx và khởi động lại
+  if nginx -t >/dev/null 2>&1; then
+    systemctl restart nginx
+    LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+    if [ "$NEW_PORT" = "80" ]; then
+      PORT_SFX=""
+    else
+      PORT_SFX=":${NEW_PORT}"
+    fi
+
+    echo ""
+    echo -e "${GREEN}==================================================================${NC}"
+    echo -e "${GREEN}${BOLD}     ✓ ĐÃ ĐỔI CỔNG TRUY CẬP THÀNH CÔNG SANG: ${NEW_PORT}!               ${NC}"
+    echo -e "${GREEN}==================================================================${NC}"
+    echo -e "🏠 Địa chỉ truy cập mới:"
+    echo -e "   • Trên máy chủ này  : ${CYAN}http://localhost${PORT_SFX}${NC} hoặc ${CYAN}http://127.0.0.1${PORT_SFX}${NC}"
+    echo -e "   • Qua mạng LAN/Wifi : ${CYAN}http://${LOCAL_IP}${PORT_SFX}${NC}"
+  else
+    echo -e "${RED}[Lỗi]: Cấu hình Nginx không hợp lệ! Đang hoàn tác lại cổng cũ...${NC}"
+    sed -i -E "s/listen [0-9]+;/listen ${CURRENT_PORT};/g" "$NGINX_CONF"
+    sed -i -E "s/listen 127.0.0.1:[0-9]+;/listen 127.0.0.1:${CURRENT_PORT};/g" "$NGINX_CONF"
+    systemctl restart nginx
+  fi
+
+  echo ""
+  read -p "Nhấn phím [Enter] để quay lại menu chính..."
+}
+
+# ------------------------------------------------------------------------------
+# MỤC 5: XÓA TOÀN BỘ DỰ ÁN RA KHỎI MÁY CHỦ (UNINSTALL)
 # ------------------------------------------------------------------------------
 uninstall_system() {
   clear
@@ -298,13 +397,16 @@ main_menu() {
     echo -e "  ${BOLD}${BLUE}[3]${NC} ${BOLD}Thay đổi tên miền / Cloudflare Tunnel${NC}"
     echo -e "      ${CYAN}Cập nhật Cloudflare Tunnel Token, đổi tên miền riêng${NC}"
     echo ""
-    echo -e "  ${BOLD}${RED}[4]${NC} ${BOLD}Xóa toàn bộ dự án ra khỏi máy chủ (Uninstall)${NC}"
+    echo -e "  ${BOLD}${PURPLE}[4]${NC} ${BOLD}Thay đổi cổng truy cập hệ thống (Web Port)${NC}"
+    echo -e "      ${CYAN}Tùy chỉnh đổi sang cổng 80, 8080, 8888, 3000 bất cứ lúc nào${NC}"
+    echo ""
+    echo -e "  ${BOLD}${RED}[5]${NC} ${BOLD}Xóa toàn bộ dự án ra khỏi máy chủ (Uninstall)${NC}"
     echo -e "      ${RED}Gỡ bỏ PM2, Nginx config, Cloudflare daemon và xóa sạch thư mục${NC}"
     echo ""
     echo -e "  ${BOLD}[0]${NC} Thoát (Exit)"
     echo ""
     echo -e "${PURPLE}──────────────────────────────────────────────────────────────────${NC}"
-    read -p "Nhập lựa chọn của bạn [0-4]: " OPTION
+    read -p "Nhập lựa chọn của bạn [0-5]: " OPTION
 
     case $OPTION in
       1)
@@ -317,6 +419,9 @@ main_menu() {
         change_domain
         ;;
       4)
+        change_port
+        ;;
+      5)
         uninstall_system
         ;;
       0)
@@ -325,7 +430,7 @@ main_menu() {
         exit 0
         ;;
       *)
-        echo -e "${RED}Lựa chọn không hợp lệ! Vui lòng chọn từ 0 đến 4.${NC}"
+        echo -e "${RED}Lựa chọn không hợp lệ! Vui lòng chọn từ 0 đến 5.${NC}"
         sleep 1.5
         ;;
     esac
