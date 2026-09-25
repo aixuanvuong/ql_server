@@ -26,6 +26,7 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isAiOpen, setIsAiOpen] = useState<boolean>(true);
+  const [mobilePane, setMobilePane] = useState<'terminal' | 'ai'>('terminal');
   const [demoBuffer, setDemoBuffer] = useState<string>('');
 
   // Quản lý danh sách tài khoản SSH đã lưu để kết nối nhanh
@@ -124,6 +125,24 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
       fitAddonRef.current = null;
     };
   }, []);
+
+  // Tự động canh chỉnh kích thước Terminal khi đổi layout, chế độ toàn màn hình hoặc chuyển tab
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (fitAddonRef.current && termRef.current) {
+        try {
+          fitAddonRef.current.fit();
+          const dims = fitAddonRef.current.proposeDimensions();
+          if (dims && socket && isConnected) {
+            socket.emit('terminal:resize', { cols: dims.cols, rows: dims.rows });
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [isAiOpen, isFullscreen, mobilePane, socket, isConnected]);
 
   // Lắng nghe dữ liệu SSH từ máy chủ truyền về qua Socket.io
   useEffect(() => {
@@ -462,10 +481,44 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
         </div>
       </div>
 
+      {/* On Mobile when AI is open: Tab switcher giữa Terminal và AI để không bị bóp nghẹt màn hình */}
+      {isAiOpen && (
+        <div className="lg:hidden flex items-center bg-slate-950 p-1.5 border-b border-slate-800 gap-1">
+          <button
+            type="button"
+            onClick={() => setMobilePane('terminal')}
+            className={`flex-1 py-1.5 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              mobilePane === 'terminal'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <TerminalIcon className="w-3.5 h-3.5" />
+            <span>Màn Hình Terminal</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobilePane('ai')}
+            className={`flex-1 py-1.5 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              mobilePane === 'ai'
+                ? 'bg-purple-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-purple-300'
+            }`}
+          >
+            <Bot className="w-3.5 h-3.5" />
+            <span>Trợ Lý AI (God Mode)</span>
+          </button>
+        </div>
+      )}
+
       {/* Main Terminal + AI Workstation Body */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Terminal Container */}
-        <div className={`flex flex-col ${isAiOpen ? 'w-full lg:w-7/12 border-b lg:border-b-0 lg:border-r border-slate-800' : 'w-full'} flex-1 min-h-[340px]`}>
+        <div
+          className={`flex flex-col flex-1 min-h-[350px] ${
+            isAiOpen ? 'w-full lg:w-7/12 border-b lg:border-b-0 lg:border-r border-slate-800' : 'w-full'
+          } ${isAiOpen && mobilePane === 'ai' ? 'hidden lg:flex' : 'flex'}`}
+        >
           <div
             ref={containerRef}
             className="flex-1 w-full bg-[#090d16] p-2 overflow-hidden"
@@ -477,11 +530,16 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
 
         {/* AI SysAdmin Chatbox Panel */}
         {isAiOpen && (
-          <div className="w-full lg:w-5/12 h-[380px] lg:h-auto flex flex-col bg-slate-900 overflow-hidden">
+          <div
+            className={`w-full lg:w-5/12 flex-1 lg:flex-initial flex flex-col bg-slate-900 overflow-hidden ${
+              mobilePane === 'terminal' ? 'hidden lg:flex' : 'flex'
+            }`}
+          >
             <AiChatbox
               getTerminalBuffer={() => extractTerminalBuffer(termRef.current, 60)}
               metrics={metrics}
               socket={socket}
+              onInsertCommand={(cmd) => handleVirtualKey(cmd + '\r')}
             />
           </div>
         )}
