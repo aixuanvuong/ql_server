@@ -9,6 +9,11 @@ const authController = require('./controllers/auth.controller');
 const aiController = require('./controllers/ai.controller');
 const networkController = require('./controllers/network.controller');
 const updateController = require('./controllers/update.controller');
+const securityController = require('./controllers/security.controller');
+const securityService = require('./services/security.service');
+const selfhealingController = require('./controllers/selfhealing.controller');
+const selfHealingService = require('./services/selfhealing.service');
+const systemService = require('./services/system.service');
 const socketAuthMiddleware = require('./sockets/socket.auth');
 const registerStatsSocket = require('./sockets/stats.socket');
 const registerSshSocket = require('./sockets/ssh.socket');
@@ -76,8 +81,33 @@ app.get('/api/system/check-update', updateController.checkForUpdates);
 app.post('/api/system/trigger-update', updateController.triggerUpdate(io));
 app.get('/api/system/update-status', updateController.getUpdateStatus);
 
+// Endpoints Quản Lý An Ninh & Auto-Ban Hackers
+app.get('/api/security/status', securityController.getSecurityStatus);
+app.post('/api/security/ban', securityController.banIpManual);
+app.post('/api/security/unban', securityController.unbanIp);
+
+// Endpoints Tự Phục Hồi Hệ Thống (Self-Healing & Safe Clean)
+app.get('/api/selfhealing/status', selfhealingController.getHealingStatus);
+app.post('/api/selfhealing/clean', selfhealingController.triggerManualCleanup);
+
 // Gắn Middleware xác thực JWT cho mọi kết nối WebSocket
 io.use(socketAuthMiddleware);
+
+// Khởi chạy tiến trình Auto-Ban giám sát đăng nhập SSH trong thời gian thực
+securityService.startMonitoring(io);
+
+// Khởi tạo hệ thống Tự Phục Hồi (Self-Healing) chạy nền liên tục 24/7
+selfHealingService.init(io);
+setInterval(async () => {
+  try {
+    const metrics = await systemService.getDynamicMetrics();
+    if (metrics) {
+      await selfHealingService.checkMetrics(metrics);
+    }
+  } catch (err) {
+    // Bỏ qua lỗi vòng lặp nền
+  }
+}, 5000);
 
 // Xử lý sự kiện khi có Client kết nối thành công
 io.on('connection', (socket) => {

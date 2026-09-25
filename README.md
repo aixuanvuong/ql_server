@@ -90,7 +90,21 @@ Giao diện Menu trực quan sẽ xuất hiện với 6 tính năng:
 - **Thao tác ngắt kết nối**: Cho phép dừng/kill tiến trình lạ hoặc ngốn băng thông bất thường chỉ với 1 cú click.
 - **🛡️ AI Đánh Giá An Ninh Mạng (Gemini AI Audit)**: Tự động phân tích toàn bộ danh sách kết nối và các cổng mở, cho điểm mức độ an toàn (Safety Score / 100), cảnh báo rủi ro bảo mật và gợi ý các lệnh Linux xử lý.
 
-### 3. 🔄 Tự Động Cập Nhật Trực Tuyến 1-Click (Web Auto-Update)
+### 3. 🛡️ Tự Động Chặn Hacker (Auto-Ban) & Tự Phục Hồi (Self-Healing System)
+- **Tự động chặn IP Brute-Force SSH (Auto-Ban)**:
+  - Backend Node.js lắng nghe trực tiếp `/var/log/auth.log` hoặc `journalctl -u ssh` thời gian thực (realtime).
+  - Thuật toán cửa sổ trượt: Nếu 1 địa chỉ IP nhập sai mật khẩu **≥ 5 lần trong vòng 5 phút**, hệ thống tự động kích hoạt `ufw deny` hoặc `iptables DROP` để chặn triệt để kẻ tấn công.
+  - Whitelist thông minh: Tự động miễn trừ dải IP nội bộ/loopback (`127.0.0.1`, `10.x.x.x`, `192.168.x.x`, `172.16-31.x.x`) để chống việc tự khóa admin.
+  - Hỗ trợ xem danh sách IP đã bị chặn và nút **"Gỡ chặn (Unban)"** hoặc **"Chặn IP thủ công"** chỉ với 1 cú click.
+- **Tự phục hồi hệ thống (Self-Healing)**:
+  - **Cứu hộ RAM (> 95% duy trì 2 phút)**: Tự động chạy lệnh an toàn `sync`, giải phóng bộ đệm RAM Cache (`sysctl -w vm.drop_caches=3`) và khởi động lại dịch vụ Web Nginx nhằm triệt tiêu các worker bị rò rỉ bộ nhớ (memory leak), tránh tình trạng Linux kích hoạt OOM Killer gây sập máy chủ.
+  - **Dọn dẹp Ổ cứng (> 90%)**: Tự động thu gọn nhật ký hệ thống `journalctl --vacuum-time=3d --vacuum-size=100M`, dọn kho lưu trữ gói tạm `apt-get clean` và gỡ bỏ gói mồ côi `apt-get autoremove -y`.
+  - Bộ định thời Cooldown thông minh (RAM: 5 phút, Disk: 15 phút) ngăn chặn việc lặp lại dồn dập.
+- **Khu vực System Alerts & Actions (Nhật ký hành động Realtime)**:
+  - Bắn thông báo khẩn cấp màu đỏ/vàng lên giao diện Web ngay khi phát hiện hành động can thiệp qua Socket.io.
+  - Lưu trữ đầy đủ lịch sử hành động kèm timestamp chi tiết, phân loại thẻ (Chặn Hacker / Cứu hộ RAM / Dọn ổ đĩa) và xem được log thực thi từng dòng lệnh.
+
+### 4. 🔄 Tự Động Cập Nhật Trực Tuyến 1-Click (Web Auto-Update)
 - **Không cần SSH thủ công vào máy chủ**: Nút **"Cập nhật"** (1-Click Update) tích hợp ngay trên thanh Header và Dashboard.
 - **Tự động kiểm tra phiên bản mới từ GitHub**: So sánh mã commit cục bộ của máy chủ với commit mới nhất trên nhánh `main` của GitHub `aixuanvuong/ql_server`.
 - **Hiển thị nhật ký thực thi trực tiếp (Realtime Logs)**: WebSocket stream truyền trực tiếp từng bước `git fetch`, `npm install`, `npm run build` và restart `nginx`/`pm2` lên cửa sổ web.

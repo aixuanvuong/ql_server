@@ -1,11 +1,13 @@
 // filepath: frontend/src/components/dashboard/DashboardView.tsx
 import React from 'react';
 import { Cpu, Flame, Database, HardDrive, Activity } from 'lucide-react';
+import { Socket } from 'socket.io-client';
 import { StaticSystemInfo, DynamicSystemMetrics } from '../../types/system.types';
 import { SystemInfoBanner } from './SystemInfoBanner';
 import { StatCard } from './StatCard';
 import { CpuGauge } from './CpuGauge';
 import { MemoryBar } from './MemoryBar';
+import { SystemAlertsSection } from './SystemAlertsSection';
 
 interface DashboardViewProps {
   staticInfo: StaticSystemInfo;
@@ -14,6 +16,8 @@ interface DashboardViewProps {
   isConnected: boolean;
   onOpenTerminal: () => void;
   onOpenUpdate?: () => void;
+  token: string;
+  socket: Socket | null;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -22,7 +26,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   history,
   isConnected,
   onOpenTerminal,
-  onOpenUpdate
+  onOpenUpdate,
+  token,
+  socket
 }) => {
   if (!metrics) {
     return (
@@ -106,7 +112,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* 4. Memory & Disk Detailed Bars */}
       <MemoryBar memory={metrics.memory} disk={metrics.disk} />
 
-      {/* 5. Live Trends Timeline (Sparkline chart) */}
+      {/* 5. Khu vực Hệ thống Tự Vệ & Cứu Hộ: Auto-Ban Hackers & Self-Healing RAM/Disk */}
+      <SystemAlertsSection token={token} socket={socket} />
+
+      {/* 6. Live Trends Timeline (Sparkline chart) */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">

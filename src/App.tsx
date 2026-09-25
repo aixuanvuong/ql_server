@@ -93,6 +93,8 @@ export default function App() {
             isConnected={isConnected}
             onOpenTerminal={() => setActiveTab('terminal')}
             onOpenUpdate={() => setIsUpdateOpen(true)}
+            token={token}
+            socket={socket}
           />
         ) : activeTab === 'network' ? (
           <NetworkView token={token} />
