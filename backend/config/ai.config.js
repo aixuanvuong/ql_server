@@ -2,15 +2,10 @@
 require('dotenv').config();
 
 module.exports = {
-  // Nhà cung cấp AI mặc định: 'gemini' hoặc 'openai'
-  AI_PROVIDER: process.env.AI_PROVIDER || 'gemini',
-
-  // API Key cho Google Gemini (hoặc OpenAI nếu cấu hình)
-  GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
-
-  // Model LLM đề xuất: 'gemini-3.8-flash' (nhanh, chi phí thấp, tối ưu phân tích log và kỹ thuật)
-  MODEL_NAME: process.env.AI_MODEL || 'gemini-3.8-flash',
+  // Cấu hình máy chủ định tuyến riêng OmniRoute (Tương thích OpenAI SDK)
+  OMNIROUTE_BASE_URL: 'https://omniroute.xuanvuong.id.vn/v1',
+  OMNIROUTE_API_KEY: process.env.OMNIROUTE_API_KEY || process.env.OPENAI_API_KEY || '',
+  OMNIROUTE_MODEL: process.env.OMNIROUTE_MODEL || 'gpt-4o',
 
   // System Prompt chuẩn chuyên môn Linux SysAdmin
   SYSTEM_PROMPT: `Bạn là "Ubuntu SysAdmin Assistant" - Chuyên gia cấp cao về Quản trị Hệ thống Linux, DevOps và Hạ tầng Ubuntu Server.

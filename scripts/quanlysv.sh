@@ -100,11 +100,18 @@ show_status() {
 
   # 5. Thông tin tài khoản đăng nhập đã lưu trong .env
   echo ""
-  echo -e "${YELLOW}5. Thông tin tài khoản Admin Dashboard:${NC}"
+  echo -e "${YELLOW}5. Thông tin tài khoản & Trợ lý AI:${NC}"
   if [ -f "$INSTALL_DIR/backend/.env" ]; then
     ADMIN_USER=$(grep -E '^ADMIN_USERNAME=' "$INSTALL_DIR/backend/.env" | cut -d '=' -f2)
-    echo -e "   • Tên đăng nhập : ${GREEN}${ADMIN_USER}${NC}"
-    echo -e "   • File cấu hình : ${CYAN}$INSTALL_DIR/backend/.env${NC}"
+    OMNI_MODEL=$(grep -E '^OMNIROUTE_MODEL=' "$INSTALL_DIR/backend/.env" | cut -d '=' -f2)
+    OMNI_KEY=$(grep -E '^OMNIROUTE_API_KEY=' "$INSTALL_DIR/backend/.env" | cut -d '=' -f2)
+    echo -e "   • Tên đăng nhập Admin : ${GREEN}${ADMIN_USER}${NC}"
+    if [ -n "$OMNI_KEY" ] && [ "$OMNI_KEY" != "your_omniroute_api_key_here" ]; then
+      echo -e "   • Trợ lý AI OmniRoute : ${GREEN}Đã cấu hình Key${NC} (Model: ${CYAN}${OMNI_MODEL:-gpt-4o}${NC})"
+    else
+      echo -e "   • Trợ lý AI OmniRoute : ${YELLOW}Chưa điền Key (OMNIROUTE_API_KEY)${NC}"
+    fi
+    echo -e "   • File cấu hình .env  : ${CYAN}$INSTALL_DIR/backend/.env${NC}"
   else
     echo -e "   • Không tìm thấy file .env tại $INSTALL_DIR/backend/.env"
   fi

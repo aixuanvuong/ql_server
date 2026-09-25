@@ -118,8 +118,9 @@ Giao diện Menu trực quan sẽ xuất hiện với 6 tính năng:
 - Tự động co giãn kích thước PTY (`cols`, `rows`) khi xoay màn hình điện thoại hoặc thay đổi kích thước cửa sổ.
 - Chế độ toàn màn hình (Fullscreen) và xóa nhanh màn hình (Clear buffer).
 
-### 3. 🤖 Trợ Lý Quản Trị Hệ Thống AI (AI SysAdmin Assistant)
-- Tích hợp mô hình ngôn ngữ lớn tốc độ cao **Gemini 3.8 Flash** của Google (hoặc OpenAI).
+### 3. 🤖 Trợ Lý Quản Trị Hệ Thống AI (AI SysAdmin Assistant via OmniRoute)
+- Định tuyến thông minh qua máy chủ riêng **OmniRoute** (`https://omniroute.xuanvuong.id.vn/v1`), hoàn toàn tương thích chuẩn SDK OpenAI.
+- Cho phép linh hoạt chọn bất kỳ mô hình ngôn ngữ nào thông qua biến `OMNIROUTE_MODEL` (ví dụ: `gpt-4o`, `claude-3-5-sonnet`, `claude-3-haiku`...).
 - **Terminal Context Awareness (AI đọc Terminal)**: Tự động trích xuất 50-100 dòng log gần nhất từ `xterm.js` và các thông số CPU/RAM hiện tại đính kèm vào câu hỏi của bạn.
 - **Phân tích thông minh**: Phát hiện lỗi crash, phân tích service systemd bị failed, giải thích lỗi phân quyền (permission denied), nghẽn mạng hoặc tràn RAM (OOM).
 - **Gợi ý lệnh có cấu trúc**: Bóc tách các câu lệnh bash vào từng ô riêng biệt kèm nút **"📋 Sao chép lệnh"** nhanh chóng.

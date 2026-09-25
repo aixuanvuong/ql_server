@@ -1,21 +1,29 @@
 // filepath: backend/services/ai.service.js
-const { GoogleGenAI } = require('@google/genai');
+const OpenAI = require('openai');
 const aiConfig = require('../config/ai.config');
 
 class AiService {
   constructor() {
-    this.geminiClient = null;
+    this.openaiClient = null;
+    this.modelName = process.env.OMNIROUTE_MODEL || 'gpt-4o';
+    this.baseURL = 'https://omniroute.xuanvuong.id.vn/v1';
     this.initClient();
   }
 
   initClient() {
-    const apiKey = aiConfig.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    const apiKey = process.env.OMNIROUTE_API_KEY || process.env.OPENAI_API_KEY;
     if (apiKey) {
       try {
-        this.geminiClient = new GoogleGenAI({ apiKey });
+        this.openaiClient = new OpenAI({
+          apiKey: apiKey,
+          baseURL: this.baseURL
+        });
+        console.log(`[AI Service] 🚀 Đã khởi tạo OpenAI Client trỏ về OmniRoute: ${this.baseURL} (Model: ${this.modelName})`);
       } catch (err) {
-        console.error('[AI Service] Lỗi khởi tạo Gemini SDK:', err.message);
+        console.error('[AI Service] ❌ Lỗi khởi tạo OpenAI Client cho OmniRoute:', err.message);
       }
+    } else {
+      console.warn('[AI Service] ⚠️ Chưa cấu hình OMNIROUTE_API_KEY trong biến môi trường (.env)');
     }
   }
 
@@ -73,24 +81,35 @@ ${userMessage}
     `.trim();
 
     // 3. Nếu chưa khởi tạo client, kiểm tra lại biến môi trường
-    if (!this.geminiClient) {
+    if (!this.openaiClient) {
       this.initClient();
     }
 
-    // 4. Gọi API Gemini chính thức
-    if (this.geminiClient) {
+    // 4. Gọi API OmniRoute thông qua OpenAI SDK
+    if (this.openaiClient) {
       try {
-        const response = await this.geminiClient.models.generateContent({
-          model: aiConfig.MODEL_NAME || 'gemini-3.8-flash',
-          contents: fullUserPrompt,
-          config: {
-            systemInstruction: aiConfig.SYSTEM_PROMPT,
-            temperature: 0.2 // Giữ nhiệt độ thấp để câu trả lời chính xác, kỹ thuật và đáng tin cậy
-          }
+        console.log(`[AI Service] 📡 Đang gửi request đến OmniRoute (${this.baseURL}) - Model: ${this.modelName}...`);
+
+        const response = await this.openaiClient.chat.completions.create({
+          model: this.modelName,
+          messages: [
+            {
+              role: 'system',
+              content: aiConfig.SYSTEM_PROMPT
+            },
+            {
+              role: 'user',
+              content: fullUserPrompt
+            }
+          ],
+          temperature: 0.2, // Giữ nhiệt độ thấp để câu trả lời chính xác, kỹ thuật và chuẩn xác
+          max_tokens: 2500
         });
 
-        const replyText = response.text || 'Không nhận được phản hồi từ AI.';
+        const replyText = response.choices?.[0]?.message?.content || 'Không nhận được nội dung phản hồi từ mô hình AI.';
         const suggestions = this.extractCommands(replyText);
+
+        console.log(`[AI Service] ✅ Phản hồi thành công từ OmniRoute (${this.modelName}) - Kích thước: ${replyText.length} ký tự`);
 
         return {
           success: true,
@@ -98,16 +117,43 @@ ${userMessage}
           suggestions: suggestions
         };
       } catch (error) {
-        console.error('[AI Service Error]:', error.message);
+        // Phân loại và in chi tiết các trường hợp lỗi kết nối đến baseURL OmniRoute
+        const errorCode = error.code || error.status || 'UNKNOWN';
+        const errorType = error.type || error.name || 'Error';
+        const errorMessage = error.message || 'Lỗi không xác định';
+
+        console.error(`[AI Service Error] ❌ Yêu cầu đến OmniRoute (${this.baseURL}) thất bại:`);
+        console.error(`   • Mã lỗi (Code/Status): ${errorCode}`);
+        console.error(`   • Phân loại lỗi (Type): ${errorType}`);
+        console.error(`   • Chi tiết lỗi (Message): ${errorMessage}`);
+
+        // Gợi ý chẩn đoán nguyên nhân bằng tiếng Việt cho Quản trị viên
+        let diagnosticHelp = '';
+        if (errorCode === 401 || errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+          diagnosticHelp = 'Mã API Key (OMNIROUTE_API_KEY) không hợp lệ hoặc đã hết hạn trên máy chủ OmniRoute.';
+        } else if (errorCode === 404 || errorMessage.includes('404')) {
+          diagnosticHelp = `Mô hình "${this.modelName}" không tồn tại hoặc endpoint "${this.baseURL}" sai đường dẫn.`;
+        } else if (errorCode === 'ECONNREFUSED' || errorCode === 'ENOTFOUND') {
+          diagnosticHelp = `Không thể kết nối đến máy chủ OmniRoute tại "${this.baseURL}". Vui lòng kiểm tra lại kết nối mạng hoặc DNS.`;
+        } else if (errorCode === 'ETIMEDOUT' || errorMessage.includes('timeout')) {
+          diagnosticHelp = `Hết thời gian chờ phản hồi từ máy chủ OmniRoute (Request Timeout).`;
+        } else if (errorCode === 429) {
+          diagnosticHelp = 'Vượt quá giới hạn số lượng request (Rate limit) trên tài khoản OmniRoute.';
+        } else if (errorCode >= 500) {
+          diagnosticHelp = 'Máy chủ định tuyến OmniRoute đang gặp sự cố nội bộ hoặc Gateway quá tải.';
+        } else {
+          diagnosticHelp = 'Vui lòng kiểm tra lại cấu hình OMNIROUTE_API_KEY và OMNIROUTE_MODEL trong file .env.';
+        }
+
         return {
           success: false,
-          error: error.message,
-          reply: `⚠️ Lỗi khi gọi AI API (${error.message}). Vui lòng kiểm tra lại cấu hình GEMINI_API_KEY.`
+          error: errorMessage,
+          reply: `⚠️ **Lỗi kết nối AI Assistant qua OmniRoute Gateway:**\n\n- **Chi tiết:** ${errorMessage} (Mã lỗi: ${errorCode})\n- **Chẩn đoán:** ${diagnosticHelp}\n- **Endpoint:** \`${this.baseURL}\` | **Model:** \`${this.modelName}\``
         };
       }
     }
 
-    // 5. Chế độ Phản hồi Thông minh khi chưa có API Key
+    // 5. Chế độ Phản hồi Thông minh khi chưa cấu hình API Key
     return {
       success: true,
       reply: this.generateFallbackAnalysis(userMessage, terminalContext, systemMetrics),
