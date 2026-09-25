@@ -481,6 +481,7 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
             <AiChatbox
               getTerminalBuffer={() => extractTerminalBuffer(termRef.current, 60)}
               metrics={metrics}
+              socket={socket}
             />
           </div>
         )}

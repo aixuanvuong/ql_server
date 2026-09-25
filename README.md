@@ -123,12 +123,17 @@ Giao diện Menu trực quan sẽ xuất hiện với 6 tính năng:
 - Tự động co giãn kích thước PTY (`cols`, `rows`) khi xoay màn hình điện thoại hoặc thay đổi kích thước cửa sổ.
 - Chế độ toàn màn hình (Fullscreen) và xóa nhanh màn hình (Clear buffer).
 
-### 3. 🤖 Trợ Lý Quản Trị Hệ Thống AI (AI SysAdmin Assistant via OmniRoute)
-- Định tuyến thông minh qua máy chủ riêng **OmniRoute** (`https://omniroute.xuanvuong.id.vn/v1`), hoàn toàn tương thích chuẩn SDK OpenAI.
-- Cho phép linh hoạt chọn bất kỳ mô hình ngôn ngữ nào thông qua biến `OMNIROUTE_MODEL` (ví dụ: `gpt-4o`, `claude-3-5-sonnet`, `claude-3-haiku`...).
-- **Terminal Context Awareness (AI đọc Terminal)**: Tự động trích xuất 50-100 dòng log gần nhất từ `xterm.js` và các thông số CPU/RAM hiện tại đính kèm vào câu hỏi của bạn.
-- **Phân tích thông minh**: Phát hiện lỗi crash, phân tích service systemd bị failed, giải thích lỗi phân quyền (permission denied), nghẽn mạng hoặc tràn RAM (OOM).
-- **Gợi ý lệnh có cấu trúc**: Bóc tách các câu lệnh bash vào từng ô riêng biệt kèm nút **"📋 Sao chép lệnh"** nhanh chóng.
+### 3. 🤖 Đặc Vụ AI Quản Trị Tự Trị (Autonomous SysAdmin Agent - God Mode)
+- **Gỡ bỏ Whitelist (God Mode)**: AI Agent được cấp công cụ `execute_command` theo chuẩn Model Context Protocol (MCP) và OpenAI Tool Calling, cho phép chạy mọi câu lệnh shell trên máy chủ Ubuntu (apt, systemctl, sed, ufw, docker, kill...).
+- **Xử lý quyền Sudo tự động**:
+  - Hỗ trợ truyền mật khẩu không gián đoạn qua `sudo -S` với biến môi trường `SUDO_PASSWORD` trong `.env`.
+  - Hỗ trợ chạy không cần mật khẩu khi cấu hình `visudo NOPASSWD: ALL`.
+- **2 Chế độ vận hành linh hoạt (Toggle trên UI)**:
+  - 🛡️ **Require Approval (Human-in-the-Loop - Mặc định an toàn)**: Khi AI quyết định chạy lệnh, Backend tạm dừng tiến trình và hiển thị **Hộp thoại Cảnh báo đỏ** trên Web. Lệnh chỉ chạy khi Quản trị viên bấm **"⚡ Đồng ý cho phép chạy"** (kèm đếm ngược 60s tự hủy).
+  - ⚡ **Auto-Pilot (Tự trị hoàn toàn - Nguy hiểm)**: AI tự động phân tích log, tự chạy lệnh, tự nhận kết quả, nếu lỗi tự suy luận lệnh mới và tiếp tục chạy trong vòng lặp Agentic Loop (tối đa 5 lượt) cho đến khi khắc phục triệt để sự cố.
+- **Hiển thị lịch sử các bước Agentic (Interactive Timeline)**: Người dùng có thể bấm mở rộng từng bước để xem chi tiết mã thoát (Exit code), thời gian chạy (ms), cùng toàn bộ nội dung STDOUT / STDERR thực tế từ máy chủ.
+- **Chống treo lệnh nghiêm ngặt (Timeout Guard)**: Tự động ngắt cưỡng chế sau 15 giây đối với các lệnh treo vô hạn như `ping` hay `tail -f`.
+- **Định tuyến thông minh qua OmniRoute** (`https://omniroute.xuanvuong.id.vn/v1`), tương thích chuẩn OpenAI SDK, hỗ trợ đổi mô hình (`gpt-4o`, `claude-3-5-sonnet`, `claude-3-haiku`...) trực tiếp trên giao diện web.
 
 ### 4. ⚡ Tối Ưu Hóa & Xử Lý Giới Hạn Token (Token Limit Optimization)
 - **Làm sạch mã ANSI**: Loại bỏ hoàn toàn các ký tự màu sắc, mã con trỏ rác trước khi gửi lên API AI.

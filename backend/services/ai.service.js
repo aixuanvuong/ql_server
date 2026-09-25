@@ -1,6 +1,8 @@
 // filepath: backend/services/ai.service.js
 const OpenAI = require('openai');
 const aiConfig = require('../config/ai.config');
+const commandExecutorService = require('./command_executor.service');
+const agentApprovalService = require('./agent_approval.service');
 
 class AiService {
   constructor() {
@@ -49,7 +51,16 @@ class AiService {
    * @param {string} terminalContext - Đoạn trích xuất từ màn hình xterm.js
    * @param {Object} systemMetrics - Thông số CPU, RAM, Nhiệt độ hiện thời
    */
-  async askAssistant({ userMessage, terminalContext, systemMetrics }) {
+  /**
+   * Gọi LLM với Agentic Loop & Tool Calling để tự động phân tích và sửa lỗi hệ thống
+   * @param {object} params
+   * @param {string} params.userMessage - Câu hỏi hoặc yêu cầu của người dùng
+   * @param {string} params.terminalContext - Đoạn trích xuất từ màn hình xterm.js
+   * @param {Object} params.systemMetrics - Thông số CPU, RAM, Nhiệt độ hiện thời
+   * @param {'require_approval' | 'auto_pilot'} [params.executionMode='require_approval'] - Chế độ duyệt lệnh
+   * @param {string} [params.socketId] - Socket ID của client gửi yêu cầu
+   */
+  async askAssistant({ userMessage, terminalContext, systemMetrics, executionMode = 'require_approval', socketId = null }) {
     // 0. Cắt xén và bảo vệ Token Limit
     const safeTerminalLogs = this.sanitizeAndTruncateLogs(terminalContext, 8000);
 
@@ -76,6 +87,9 @@ ${metricsContext}
 ${safeTerminalLogs || '(Không có nội dung log)'}
 \`\`\`
 
+[CHẾ ĐỘ THỰC THI HIỆN TẠI]:
+${executionMode === 'auto_pilot' ? '⚡ AUTO-PILOT (Tự động hoàn toàn - Bạn được phép tự gọi tool execute_command để chẩn đoán và tự sửa lỗi)' : '🛡️ REQUIRE APPROVAL (Cần Quản trị viên duyệt - Mọi lệnh qua execute_command sẽ chờ người dùng bấm Đồng ý)'}
+
 [YÊU CẦU CỦA QUẢN TRỊ VIÊN]:
 ${userMessage}
     `.trim();
@@ -85,36 +99,225 @@ ${userMessage}
       this.initClient();
     }
 
-    // 4. Gọi API OmniRoute thông qua OpenAI SDK
+    // 4. Gọi API OmniRoute thông qua OpenAI SDK với Agentic Tool Calling
     if (this.openaiClient) {
       try {
-        console.log(`[AI Service] 📡 Đang gửi request đến OmniRoute (${this.baseURL}) - Model: ${this.modelName}...`);
+        console.log(`[AI Service] 📡 [Agent Mode: ${executionMode}] Gửi yêu cầu đến OmniRoute (${this.baseURL}) - Model: ${this.modelName}...`);
 
-        const response = await this.openaiClient.chat.completions.create({
-          model: this.modelName,
-          messages: [
-            {
-              role: 'system',
-              content: aiConfig.SYSTEM_PROMPT
-            },
-            {
-              role: 'user',
-              content: fullUserPrompt
+        const messages = [
+          {
+            role: 'system',
+            content: aiConfig.SYSTEM_PROMPT
+          },
+          {
+            role: 'user',
+            content: fullUserPrompt
+          }
+        ];
+
+        const tools = [commandExecutorService.getToolDefinition()];
+        const maxIterations = 5; // Giới hạn tối đa 5 bước lặp để tránh vòng lặp vô tận
+        const executedSteps = [];
+        let finalReplyText = '';
+        let iterationCount = 0;
+
+        for (let iteration = 0; iteration < maxIterations; iteration++) {
+          iterationCount = iteration + 1;
+          console.log(`[AI Agent Loop] 🔄 Bắt đầu lượt xử lý #${iterationCount} (Model: ${this.modelName})...`);
+
+          let response;
+          try {
+            response = await this.openaiClient.chat.completions.create({
+              model: this.modelName,
+              messages: messages,
+              tools: tools,
+              tool_choice: 'auto',
+              temperature: 0.2,
+              max_tokens: 2500
+            });
+          } catch (modelError) {
+            // Nếu model cụ thể không hỗ trợ tool calling, thử fallback không dùng tools
+            if (modelError.message && (modelError.message.includes('tools') || modelError.message.includes('function'))) {
+              console.warn(`[AI Service] Model ${this.modelName} không hỗ trợ tool calling. Đang fallback sang chat thường:`, modelError.message);
+              response = await this.openaiClient.chat.completions.create({
+                model: this.modelName,
+                messages: messages,
+                temperature: 0.2,
+                max_tokens: 2500
+              });
+            } else {
+              throw modelError;
             }
-          ],
-          temperature: 0.2, // Giữ nhiệt độ thấp để câu trả lời chính xác, kỹ thuật và chuẩn xác
-          max_tokens: 2500
-        });
+          }
 
-        const replyText = response.choices?.[0]?.message?.content || 'Không nhận được nội dung phản hồi từ mô hình AI.';
-        const suggestions = this.extractCommands(replyText);
+          const choice = response.choices?.[0];
+          const assistantMessage = choice?.message;
+          if (!assistantMessage) {
+            finalReplyText = 'Không nhận được nội dung phản hồi từ mô hình AI.';
+            break;
+          }
 
-        console.log(`[AI Service] ✅ Phản hồi thành công từ OmniRoute (${this.modelName}) - Kích thước: ${replyText.length} ký tự`);
+          // Kiểm tra xem AI có muốn gọi Tool hay không
+          const toolCalls = assistantMessage.tool_calls;
+
+          if (toolCalls && toolCalls.length > 0) {
+            console.log(`[AI Agent Loop] 🛠️ AI yêu cầu gọi ${toolCalls.length} tool(s) ở lượt #${iterationCount}`);
+            
+            // Lưu tin nhắn trợ lý yêu cầu gọi tool vào lịch sử ngữ cảnh
+            messages.push(assistantMessage);
+
+            for (const toolCall of toolCalls) {
+              if (toolCall.function?.name === 'execute_command') {
+                let parsedArgs = {};
+                try {
+                  parsedArgs = typeof toolCall.function.arguments === 'string'
+                    ? JSON.parse(toolCall.function.arguments)
+                    : (toolCall.function.arguments || {});
+                } catch (parseErr) {
+                  parsedArgs = { command: toolCall.function.arguments || '' };
+                }
+
+                const commandToRun = (parsedArgs.command || '').trim();
+                const timeoutSeconds = parsedArgs.timeoutSeconds || 15;
+                const workingDirectory = parsedArgs.workingDirectory;
+
+                let toolResult = null;
+
+                if (executionMode === 'require_approval') {
+                  // PHÁT SỰ KIỆN TẠM DỪNG CHỜ PHÊ DUYỆT TỚI FRONTEND
+                  if (agentApprovalService.io) {
+                    agentApprovalService.io.emit('ai:agent_step', {
+                      stepIndex: iterationCount,
+                      command: commandToRun,
+                      status: 'waiting_approval',
+                      executionMode,
+                      timestamp: Date.now()
+                    });
+                  }
+
+                  console.log(`[AI Agent Loop] ⏸️ Tạm dừng chờ quản trị viên phê duyệt lệnh: "${commandToRun}"`);
+                  const approval = await agentApprovalService.requestApproval({
+                    command: commandToRun,
+                    timeoutSeconds,
+                    workingDirectory,
+                    socketId,
+                    iteration: iterationCount
+                  });
+
+                  if (!approval.approved) {
+                    console.log(`[AI Agent Loop] ❌ Lệnh đã bị từ chối bởi quản trị viên: "${commandToRun}"`);
+                    toolResult = {
+                      success: false,
+                      rejectedByUser: true,
+                      exitCode: 130,
+                      stdout: '',
+                      stderr: approval.reason || 'Quản trị viên đã bấm TỪ CHỐI thực thi câu lệnh này.',
+                      executionTimeMs: 0
+                    };
+                  } else {
+                    console.log(`[AI Agent Loop] ✅ Quản trị viên đã ĐỒNG Ý chạy lệnh: "${commandToRun}"`);
+                    if (agentApprovalService.io) {
+                      agentApprovalService.io.emit('ai:agent_step', {
+                        stepIndex: iterationCount,
+                        command: commandToRun,
+                        status: 'running',
+                        executionMode,
+                        timestamp: Date.now()
+                      });
+                    }
+                    toolResult = await commandExecutorService.executeCommand(commandToRun, {
+                      timeoutSeconds,
+                      workingDirectory
+                    });
+                  }
+                } else {
+                  // CHẾ ĐỘ AUTO-PILOT (TỰ TRỊ TOÀN QUYỀN - GOD MODE)
+                  console.log(`[AI Agent Loop] ⚡ [AUTO-PILOT] Tự động thực thi lệnh: "${commandToRun}"`);
+                  if (agentApprovalService.io) {
+                    agentApprovalService.io.emit('ai:agent_step', {
+                      stepIndex: iterationCount,
+                      command: commandToRun,
+                      status: 'running_autopilot',
+                      executionMode,
+                      timestamp: Date.now()
+                    });
+                  }
+
+                  toolResult = await commandExecutorService.executeCommand(commandToRun, {
+                    timeoutSeconds,
+                    workingDirectory
+                  });
+                }
+
+                // Ghi nhận lịch sử bước chạy
+                executedSteps.push({
+                  stepIndex: iterationCount,
+                  command: commandToRun,
+                  toolResult: toolResult,
+                  approved: !toolResult.rejectedByUser,
+                  timestamp: Date.now()
+                });
+
+                // Phát sự kiện cập nhật tiến độ hoàn thành bước tới Frontend
+                if (agentApprovalService.io) {
+                  agentApprovalService.io.emit('ai:agent_step', {
+                    stepIndex: iterationCount,
+                    command: commandToRun,
+                    status: toolResult.success ? 'success' : (toolResult.rejectedByUser ? 'rejected' : 'failed'),
+                    result: toolResult,
+                    executionMode,
+                    timestamp: Date.now()
+                  });
+                }
+
+                // Đưa phản hồi kết quả của tool vào lịch sử ngữ cảnh để AI suy luận tiếp
+                messages.push({
+                  role: 'tool',
+                  tool_call_id: toolCall.id,
+                  content: JSON.stringify({
+                    command: commandToRun,
+                    success: toolResult.success,
+                    exitCode: toolResult.exitCode,
+                    stdout: toolResult.stdout,
+                    stderr: toolResult.stderr,
+                    timedOut: toolResult.timedOut,
+                    rejectedByUser: toolResult.rejectedByUser
+                  })
+                });
+              } else {
+                // Tool không được hỗ trợ
+                messages.push({
+                  role: 'tool',
+                  tool_call_id: toolCall.id,
+                  content: JSON.stringify({ error: `Tool ${toolCall.function?.name} không tồn tại trên hệ thống.` })
+                });
+              }
+            }
+
+            // Tiếp tục vòng lặp for sang lượt tiếp theo để AI đọc output của tool
+          } else {
+            // AI không gọi tool nào nữa -> Đã hoàn tất phân tích và đưa ra kết luận cuối cùng
+            finalReplyText = assistantMessage.content || '';
+            console.log(`[AI Agent Loop] 🏁 Hoàn tất Agentic Loop ở lượt #${iterationCount}. Kích thước câu trả lời: ${finalReplyText.length} ký tự`);
+            break;
+          }
+        }
+
+        if (!finalReplyText && executedSteps.length > 0) {
+          finalReplyText = `### 🤖 Báo Cáo Thực Thi Tự Động (Agent Report)
+Đã hoàn tất chuỗi **${executedSteps.length} bước** kiểm tra & can thiệp hệ thống máy chủ.
+${executedSteps.map((s, idx) => `${idx + 1}. \`${s.command}\` -> **${s.toolResult.success ? 'Thành công (Exit 0)' : 'Lỗi/Dừng (Exit ' + s.toolResult.exitCode + ')'}**`).join('\n')}`;
+        }
+
+        const suggestions = this.extractCommands(finalReplyText);
 
         return {
           success: true,
-          reply: replyText,
-          suggestions: suggestions
+          reply: finalReplyText,
+          suggestions: suggestions,
+          steps: executedSteps,
+          executionMode: executionMode,
+          iterationsCount: iterationCount
         };
       } catch (error) {
         // Phân loại và in chi tiết các trường hợp lỗi kết nối đến baseURL OmniRoute

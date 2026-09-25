@@ -1,6 +1,34 @@
 // filepath: frontend/src/api/ai.api.ts
 import { getStoredServerUrl, getStoredToken } from './auth.api';
 
+export interface AgentExecutedStep {
+  stepIndex: number;
+  command: string;
+  toolResult: {
+    success: boolean;
+    exitCode: number;
+    stdout: string;
+    stderr: string;
+    executionTimeMs: number;
+    timedOut?: boolean;
+    rejectedByUser?: boolean;
+  };
+  approved: boolean;
+  timestamp: number;
+}
+
+export interface CommandApprovalRequestData {
+  approvalId: string;
+  command: string;
+  timeoutSeconds: number;
+  workingDirectory?: string;
+  isSudo: boolean;
+  iteration: number;
+  explanation: string;
+  createdAt: number;
+  expiresAt: number;
+}
+
 export interface AiChatPayload {
   message: string;
   terminalContext?: string;
@@ -10,12 +38,17 @@ export interface AiChatPayload {
     temperature?: number;
     uptimeSeconds?: number;
   };
+  executionMode?: 'require_approval' | 'auto_pilot';
+  socketId?: string;
 }
 
 export interface AiChatResponse {
   success: boolean;
   reply: string;
   suggestions?: string[];
+  steps?: AgentExecutedStep[];
+  executionMode?: 'require_approval' | 'auto_pilot';
+  iterationsCount?: number;
   error?: string;
 }
 
@@ -246,5 +279,65 @@ export async function testAiConnectionApi(): Promise<AiTestResponse> {
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Lỗi kết nối máy chủ';
     return { success: false, message: msg };
+  }
+}
+
+/**
+ * Gửi phản hồi phê duyệt (Đồng ý hoặc Từ chối) lệnh tới Backend qua HTTP Fallback
+ */
+export async function sendApprovalResponseApi(
+  approvalId: string,
+  approved: boolean
+): Promise<{ success: boolean; message: string }> {
+  if (isDemo()) {
+    return {
+      success: true,
+      message: `[Demo] Đã ${approved ? 'ĐỒNG Ý' : 'TỪ CHỐI'} thực thi lệnh.`
+    };
+  }
+
+  try {
+    const serverUrl = getStoredServerUrl().replace(/\/+$/, '');
+    const token = getStoredToken();
+    const res = await fetch(`${serverUrl}/api/ai/approve`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ approvalId, approved })
+    });
+
+    return await res.json();
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Lỗi kết nối';
+    return { success: false, message: msg };
+  }
+}
+
+/**
+ * Lấy danh sách các lệnh đang chờ phê duyệt
+ */
+export async function getPendingApprovalsApi(): Promise<{
+  success: boolean;
+  data: CommandApprovalRequestData[];
+}> {
+  if (isDemo()) {
+    return { success: true, data: [] };
+  }
+
+  try {
+    const serverUrl = getStoredServerUrl().replace(/\/+$/, '');
+    const token = getStoredToken();
+    const res = await fetch(`${serverUrl}/api/ai/pending-approvals`, {
+      method: 'GET',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      }
+    });
+
+    return await res.json();
+  } catch {
+    return { success: false, data: [] };
   }
 }

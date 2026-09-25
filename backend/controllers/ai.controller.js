@@ -1,13 +1,14 @@
 // filepath: backend/controllers/ai.controller.js
 const aiService = require('../services/ai.service');
+const agentApprovalService = require('../services/agent_approval.service');
 
 /**
- * Controller xử lý yêu cầu chat và phân tích log từ SysAdmin
+ * Controller xử lý yêu cầu chat và phân tích log từ SysAdmin kèm Tool Calling Agentic Loop
  * Route: POST /api/ai-chat
  */
 exports.chatWithAssistant = async (req, res) => {
   try {
-    const { message, terminalContext, systemMetrics } = req.body;
+    const { message, terminalContext, systemMetrics, executionMode, socketId } = req.body;
 
     if (!message || typeof message !== 'string') {
       return res.status(400).json({
@@ -19,7 +20,9 @@ exports.chatWithAssistant = async (req, res) => {
     const result = await aiService.askAssistant({
       userMessage: message,
       terminalContext: terminalContext || '',
-      systemMetrics: systemMetrics || null
+      systemMetrics: systemMetrics || null,
+      executionMode: executionMode === 'auto_pilot' ? 'auto_pilot' : 'require_approval',
+      socketId: socketId || null
     });
 
     return res.status(200).json({
@@ -31,6 +34,54 @@ exports.chatWithAssistant = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Đã xảy ra lỗi máy chủ nội bộ khi xử lý yêu cầu AI.',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Phê duyệt hoặc Từ chối lệnh khi chạy ở chế độ Require Approval (HTTP Fallback)
+ * Route: POST /api/ai/approve
+ */
+exports.approveCommand = (req, res) => {
+  try {
+    const { approvalId, approved } = req.body;
+
+    if (!approvalId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Thiếu mã định danh yêu cầu phê duyệt (approvalId).'
+      });
+    }
+
+    const username = req.user?.username || 'Admin';
+    const result = agentApprovalService.resolveApproval(approvalId, approved, username);
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi khi xử lý phê duyệt lệnh.',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Lấy danh sách các lệnh đang chờ phê duyệt
+ * Route: GET /api/ai/pending-approvals
+ */
+exports.getPendingApprovals = (req, res) => {
+  try {
+    const list = agentApprovalService.getPendingApprovals();
+    return res.status(200).json({
+      success: true,
+      data: list
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Không thể đọc danh sách lệnh chờ phê duyệt.',
       error: error.message
     });
   }

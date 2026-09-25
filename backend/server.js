@@ -17,6 +17,8 @@ const systemService = require('./services/system.service');
 const socketAuthMiddleware = require('./sockets/socket.auth');
 const registerStatsSocket = require('./sockets/stats.socket');
 const registerSshSocket = require('./sockets/ssh.socket');
+const registerAiSocket = require('./sockets/ai.socket');
+const agentApprovalService = require('./services/agent_approval.service');
 
 const app = express();
 const server = http.createServer(app);
@@ -65,6 +67,8 @@ app.post('/api/network/ai-audit', networkController.auditNetworkWithAi);
 
 // Endpoint trợ lý AI SysAdmin Assistant (Phân tích log terminal và thông số)
 app.post('/api/ai-chat', aiController.chatWithAssistant);
+app.post('/api/ai/approve', aiController.approveCommand);
+app.get('/api/ai/pending-approvals', aiController.getPendingApprovals);
 app.get('/api/ai/config', aiController.getAiConfig);
 app.post('/api/ai/config', aiController.updateAiConfig);
 app.post('/api/ai/test', aiController.testAiConnection);
@@ -101,6 +105,9 @@ securityService.startMonitoring(io);
 
 // Khởi tạo hệ thống Tự Phục Hồi (Self-Healing) chạy nền liên tục 24/7
 selfHealingService.init(io);
+
+// Khởi tạo hệ thống Phê duyệt Lệnh cho AI Autonomous Agent (Human-in-the-Loop)
+agentApprovalService.init(io);
 setInterval(async () => {
   try {
     const metrics = await systemService.getDynamicMetrics();
@@ -121,6 +128,9 @@ io.on('connection', (socket) => {
 
   // Đăng ký kênh truyền tải luồng dữ liệu SSH Terminal
   registerSshSocket(io, socket);
+
+  // Đăng ký kênh phê duyệt lệnh AI Autonomous Agent (Human-in-the-Loop)
+  registerAiSocket(io, socket);
 
   socket.on('disconnect', (reason) => {
     console.log(`[Socket] Client ${socket.id} đã ngắt kết nối: ${reason}`);
