@@ -5,6 +5,7 @@ import { AuthUser } from './types/system.types';
 import { useSocket } from './hooks/useSocket';
 import { useSystemStats } from './hooks/useSystemStats';
 import { LoginForm } from './components/auth/LoginForm';
+import { ChangeCredentialsModal } from './components/auth/ChangeCredentialsModal';
 import { Header } from './components/layout/Header';
 import { TabsNav } from './components/layout/TabsNav';
 import { DashboardView } from './components/dashboard/DashboardView';
@@ -16,6 +17,7 @@ export default function App() {
     token ? { username: 'admin', role: 'admin' } : null
   );
   const [activeTab, setActiveTab] = useState<'monitor' | 'terminal'>('monitor');
+  const [isChangeCredsOpen, setIsChangeCredsOpen] = useState(false);
 
   // Khởi tạo kết nối Socket.io với Token xác thực
   const { socket, isConnected } = useSocket(token);
@@ -27,6 +29,12 @@ export default function App() {
   const handleLoginSuccess = (newToken: string, loggedUser: AuthUser) => {
     setToken(newToken);
     setUser(loggedUser);
+  };
+
+  // Xử lý cập nhật thông tin tài khoản / mật khẩu thành công
+  const handleCredentialsUpdated = (newToken: string, updatedUser: AuthUser) => {
+    setToken(newToken);
+    setUser(updatedUser);
   };
 
   // Xử lý khi đăng xuất
@@ -49,8 +57,18 @@ export default function App() {
         isConnected={isConnected}
         hostname={staticInfo.hostname}
         onLogout={handleLogout}
+        onChangeCredentials={() => setIsChangeCredsOpen(true)}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+      />
+
+      {/* Modal đổi tài khoản / mật khẩu */}
+      <ChangeCredentialsModal
+        isOpen={isChangeCredsOpen}
+        onClose={() => setIsChangeCredsOpen(false)}
+        token={token}
+        currentUser={user}
+        onUpdateSuccess={handleCredentialsUpdated}
       />
 
       {/* 2. Nội dung các Tab chức năng */}

@@ -46,6 +46,9 @@ app.post('/api/auth/login', authController.login);
 // Endpoint kiểm tra token
 app.get('/api/auth/verify', authController.verifyToken);
 
+// Endpoint đổi tài khoản và mật khẩu
+app.post('/api/auth/change-credentials', authController.changeCredentials);
+
 // Endpoint trợ lý AI SysAdmin Assistant (Phân tích log terminal và thông số)
 app.post('/api/ai-chat', aiController.chatWithAssistant);
 

@@ -318,7 +318,69 @@ change_port() {
 }
 
 # ------------------------------------------------------------------------------
-# MỤC 5: XÓA TOÀN BỘ DỰ ÁN RA KHỎI MÁY CHỦ (UNINSTALL)
+# MỤC 5: THAY ĐỔI TÀI KHOẢN VÀ MẬT KHẨU ĐĂNG NHẬP ADMIN
+# ------------------------------------------------------------------------------
+change_credentials() {
+  clear
+  echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════════╗${NC}"
+  echo -e "${PURPLE}║${CYAN}${BOLD}     🔑 THAY ĐỔI TÀI KHOẢN & MẬT KHẨU ĐĂNG NHẬP ADMIN          ${NC}${PURPLE}║${NC}"
+  echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════════╝${NC}"
+  echo ""
+
+  ENV_FILE="$INSTALL_DIR/backend/.env"
+  if [ ! -f "$ENV_FILE" ]; then
+    echo -e "${RED}[Lỗi]: Không tìm thấy file cấu hình tại $ENV_FILE!${NC}"
+    read -p "Nhấn [Enter] để quay lại..."
+    return
+  fi
+
+  CURRENT_USER=$(grep -E '^ADMIN_USERNAME=' "$ENV_FILE" | cut -d '=' -f2)
+  CURRENT_USER=${CURRENT_USER:-admin}
+
+  echo -e "Tên đăng nhập Admin hiện tại: ${GREEN}${BOLD}${CURRENT_USER}${NC}"
+  echo ""
+  read -p "Nhập tên đăng nhập mới [Để trống nếu giữ nguyên '$CURRENT_USER']: " NEW_USER
+  FINAL_USER=${NEW_USER:-$CURRENT_USER}
+
+  echo ""
+  read -p "Nhập mật khẩu Admin mới (tối thiểu 4 ký tự): " NEW_PASS
+  if [ -z "$NEW_PASS" ] || [ "${#NEW_PASS}" -lt 4 ]; then
+    echo -e "${RED}[Lỗi]: Mật khẩu không được để trống và phải có ít nhất 4 ký tự!${NC}"
+    read -p "Nhấn [Enter] để quay lại..."
+    return
+  fi
+
+  echo ""
+  echo -e "${CYAN}→ Đang cập nhật tài khoản và mật khẩu vào file cấu hình...${NC}"
+  
+  if grep -q '^ADMIN_USERNAME=' "$ENV_FILE"; then
+    sed -i -E "s/^ADMIN_USERNAME=.*/ADMIN_USERNAME=${FINAL_USER}/g" "$ENV_FILE"
+  else
+    echo "ADMIN_USERNAME=${FINAL_USER}" >> "$ENV_FILE"
+  fi
+
+  if grep -q '^ADMIN_PASSWORD=' "$ENV_FILE"; then
+    sed -i -E "s/^ADMIN_PASSWORD=.*/ADMIN_PASSWORD=${NEW_PASS}/g" "$ENV_FILE"
+  else
+    echo "ADMIN_PASSWORD=${NEW_PASS}" >> "$ENV_FILE"
+  fi
+
+  echo -e "${CYAN}→ Khởi động lại Backend PM2 để áp dụng tài khoản mới...${NC}"
+  pm2 restart "$PM2_NAME" 2>/dev/null || true
+
+  echo ""
+  echo -e "${GREEN}==================================================================${NC}"
+  echo -e "${GREEN}${BOLD}     ✓ ĐÃ CẬP NHẬT TÀI KHOẢN VÀ MẬT KHẨU ADMIN THÀNH CÔNG!        ${NC}"
+  echo -e "${GREEN}==================================================================${NC}"
+  echo -e "🔑 Thông tin đăng nhập mới của bạn:"
+  echo -e "   • Tên đăng nhập : ${GREEN}${BOLD}${FINAL_USER}${NC}"
+  echo -e "   • Mật khẩu      : ${YELLOW}${BOLD}${NEW_PASS}${NC}"
+  echo ""
+  read -p "Nhấn phím [Enter] để quay lại menu chính..."
+}
+
+# ------------------------------------------------------------------------------
+# MỤC 6: XÓA TOÀN BỘ DỰ ÁN RA KHỎI MÁY CHỦ (UNINSTALL)
 # ------------------------------------------------------------------------------
 uninstall_system() {
   clear
@@ -400,13 +462,16 @@ main_menu() {
     echo -e "  ${BOLD}${PURPLE}[4]${NC} ${BOLD}Thay đổi cổng truy cập hệ thống (Web Port)${NC}"
     echo -e "      ${CYAN}Tùy chỉnh đổi sang cổng 80, 8080, 8888, 3000 bất cứ lúc nào${NC}"
     echo ""
-    echo -e "  ${BOLD}${RED}[5]${NC} ${BOLD}Xóa toàn bộ dự án ra khỏi máy chủ (Uninstall)${NC}"
+    echo -e "  ${BOLD}${GREEN}[5]${NC} ${BOLD}Thay đổi tài khoản & mật khẩu đăng nhập Admin${NC}"
+    echo -e "      ${CYAN}Đổi tên đăng nhập và mật khẩu truy cập Dashboard${NC}"
+    echo ""
+    echo -e "  ${BOLD}${RED}[6]${NC} ${BOLD}Xóa toàn bộ dự án ra khỏi máy chủ (Uninstall)${NC}"
     echo -e "      ${RED}Gỡ bỏ PM2, Nginx config, Cloudflare daemon và xóa sạch thư mục${NC}"
     echo ""
     echo -e "  ${BOLD}[0]${NC} Thoát (Exit)"
     echo ""
     echo -e "${PURPLE}──────────────────────────────────────────────────────────────────${NC}"
-    read -p "Nhập lựa chọn của bạn [0-5]: " OPTION
+    read -p "Nhập lựa chọn của bạn [0-6]: " OPTION
 
     case $OPTION in
       1)
@@ -422,6 +487,9 @@ main_menu() {
         change_port
         ;;
       5)
+        change_credentials
+        ;;
+      6)
         uninstall_system
         ;;
       0)
@@ -430,7 +498,7 @@ main_menu() {
         exit 0
         ;;
       *)
-        echo -e "${RED}Lựa chọn không hợp lệ! Vui lòng chọn từ 0 đến 5.${NC}"
+        echo -e "${RED}Lựa chọn không hợp lệ! Vui lòng chọn từ 0 đến 6.${NC}"
         sleep 1.5
         ;;
     esac

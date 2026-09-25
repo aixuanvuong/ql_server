@@ -1,6 +1,6 @@
 // filepath: frontend/src/components/layout/Header.tsx
 import React from 'react';
-import { Server, LogOut, Wifi, WifiOff, Terminal, Activity } from 'lucide-react';
+import { Server, LogOut, Wifi, WifiOff, Terminal, Activity, KeyRound } from 'lucide-react';
 import { AuthUser } from '../../types/system.types';
 
 interface HeaderProps {
@@ -8,6 +8,7 @@ interface HeaderProps {
   isConnected: boolean;
   hostname: string;
   onLogout: () => void;
+  onChangeCredentials?: () => void;
   activeTab: 'monitor' | 'terminal';
   setActiveTab: (tab: 'monitor' | 'terminal') => void;
 }
@@ -17,6 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   isConnected,
   hostname,
   onLogout,
+  onChangeCredentials,
   activeTab,
   setActiveTab
 }) => {
@@ -82,12 +84,22 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
 
-        {/* Right: User & Logout */}
+        {/* Right: User & Actions */}
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="hidden sm:block text-right">
             <div className="text-xs font-medium text-slate-200">{user?.username || 'admin'}</div>
             <div className="text-[10px] text-emerald-400 uppercase tracking-wider">{user?.role || 'admin'}</div>
           </div>
+          {onChangeCredentials && (
+            <button
+              onClick={onChangeCredentials}
+              title="Đổi tài khoản & mật khẩu"
+              className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-slate-800/80 hover:bg-amber-500/20 hover:text-amber-300 text-slate-400 border border-slate-700 transition-all flex items-center gap-1.5 text-xs cursor-pointer"
+            >
+              <KeyRound className="w-4 h-4 text-amber-400" />
+              <span className="hidden sm:inline">Đổi mật khẩu</span>
+            </button>
+          )}
           <button
             onClick={onLogout}
             title="Đăng xuất"

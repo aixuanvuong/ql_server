@@ -70,3 +70,33 @@ export async function loginUser(
     };
   }
 }
+
+export async function changeCredentialsApi(
+  serverUrl: string,
+  token: string,
+  credentials: { currentPassword: string; newUsername?: string; newPassword: string }
+): Promise<{ success: boolean; token?: string; user?: AuthUser; message?: string }> {
+  try {
+    const cleanUrl = serverUrl.replace(/\/+$/, '');
+    const response = await fetch(`${cleanUrl}/api/auth/change-credentials`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(credentials)
+    });
+
+    const resData = await response.json();
+    if (response.ok && resData.success) {
+      if (resData.token) {
+        setStoredToken(resData.token);
+      }
+      return { success: true, token: resData.token, user: resData.user, message: resData.message };
+    }
+    return { success: false, message: resData.message || 'Thay đổi thông tin không thành công.' };
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : 'Lỗi kết nối';
+    return { success: false, message: `Lỗi kết nối đến máy chủ: ${errMessage}` };
+  }
+}

@@ -38,7 +38,7 @@ Sau khi cài đặt xong, bất cứ khi nào mở Terminal máy chủ, bạn ch
 sudo quanlysv
 ```
 
-Giao diện Menu trực quan sẽ xuất hiện với 5 tính năng:
+Giao diện Menu trực quan sẽ xuất hiện với 6 tính năng:
 
 ```text
 ╔══════════════════════════════════════════════════════════════════╗
@@ -56,9 +56,12 @@ Giao diện Menu trực quan sẽ xuất hiện với 5 tính năng:
       (Cập nhật Cloudflare Tunnel Token, đổi tên miền riêng)
 
   [4] Thay đổi cổng truy cập hệ thống (Web Port)
-      (Tự do đổi sang bất kỳ cổng nào: 80, 8080, 8888, 3000...)
+      (Tùy chỉnh đổi sang bất kỳ cổng nào: 80, 8080, 8888, 3000...)
 
-  [5] Xóa toàn bộ dự án ra khỏi máy chủ (Uninstall)
+  [5] Thay đổi tài khoản & mật khẩu đăng nhập Admin
+      (Đổi trực tiếp tên đăng nhập và mật khẩu quản trị hệ thống)
+
+  [6] Xóa toàn bộ dự án ra khỏi máy chủ (Uninstall)
       (Gỡ bỏ PM2, Nginx config, Cloudflare daemon và xóa sạch thư mục)
 
   [0] Thoát (Exit)
