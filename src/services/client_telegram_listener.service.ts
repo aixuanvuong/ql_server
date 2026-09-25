@@ -1,5 +1,5 @@
 // filepath: frontend/src/services/client_telegram_listener.service.ts
-import { getStoredToken } from '../api/auth.api';
+import { AiChatMessage } from '../api/ai.api';
 
 export interface TelegramIncomingMessage {
   messageId: number;
@@ -9,6 +9,7 @@ export interface TelegramIncomingMessage {
   chatId: number;
   text: string;
   date: number;
+  history?: AiChatMessage[];
 }
 
 export type MessageHandler = (msg: TelegramIncomingMessage) => Promise<string | void>;
@@ -22,6 +23,9 @@ class ClientTelegramListenerService {
   private pollingTimeoutId: any = null;
   private messageHandler: MessageHandler | null = null;
   private onStatusChangeCallback: ((status: 'running' | 'stopped' | 'error', error?: string) => void) | null = null;
+  
+  // Lưu lịch sử hội thoại nhiều lượt (Multi-turn Context Memory) theo Chat ID
+  private chatHistories: Map<string, AiChatMessage[]> = new Map();
 
   constructor() {
     this.loadFromStorage();
@@ -40,6 +44,27 @@ class ClientTelegramListenerService {
 
   public onStatusChange(callback: (status: 'running' | 'stopped' | 'error', error?: string) => void) {
     this.onStatusChangeCallback = callback;
+  }
+
+  public getHistory(chatId: string | number): AiChatMessage[] {
+    return this.chatHistories.get(String(chatId)) || [];
+  }
+
+  public appendHistory(chatId: string | number, role: 'user' | 'assistant', content: string) {
+    if (!content) return;
+    const key = String(chatId);
+    const history = this.getHistory(key);
+    history.push({ role, content });
+
+    // Giữ tối đa 10 tin nhắn gần nhất để tối ưu token mà vẫn nhớ sâu ngữ cảnh
+    if (history.length > 10) {
+      history.splice(0, history.length - 10);
+    }
+    this.chatHistories.set(key, history);
+  }
+
+  public clearHistory(chatId: string | number) {
+    this.chatHistories.delete(String(chatId));
   }
 
   public start() {
@@ -106,7 +131,7 @@ class ClientTelegramListenerService {
           this.onStatusChangeCallback('error', data.description);
         }
       }
-    } catch (err: unknown) {
+    } catch {
       // Bỏ qua timeout thường lệ của long polling hoặc mạng tạm gián đoạn
     }
 
@@ -137,15 +162,27 @@ class ClientTelegramListenerService {
     const lowerText = incoming.text.toLowerCase();
 
     if (lowerText === '/start' || lowerText === '/help') {
+      const historyCount = this.getHistory(incoming.chatId).length;
       const helpMsg = `🤖 *UBUNTU SYSMONITOR - CHATOPS AGENT ONLINE*\n\n` +
         `Xin chào Quản trị viên *${incoming.fromFirstName || 'Admin'}*!\n` +
-        `Hệ thống Web & Bot hiện đang *kết nối và lắng nghe trực tiếp 100%* mọi chỉ thị của bạn.\n\n` +
+        `Hệ thống Web & Bot hiện đang *kết nối và ghi nhớ ngữ cảnh liên tục* mọi câu hỏi của bạn.\n\n` +
         `📌 *Các lệnh nhanh:*\n` +
         `• \`/status\` - Xem tức thì tình trạng phần cứng máy chủ (CPU, RAM, Ổ cứng, Uptime)\n` +
+        `• \`/clear\` - Xóa sạch bộ nhớ ngữ cảnh để bắt đầu cuộc trò chuyện mới\n` +
         `• \`/ping\` - Kiểm tra độ trễ phản hồi\n` +
         `• \`/help\` - Xem lại bảng hướng dẫn này\n\n` +
-        `💬 *Gõ câu hỏi bất kỳ:* Bot đã sẵn sàng nhận chỉ thị và phân tích hệ thống cùng bạn!`;
+        `🧠 *Bộ nhớ ngữ cảnh:* ${historyCount > 0 ? `Đang nhớ ${historyCount} tin nhắn trước đó` : 'Đang sẵn sàng'}.\n` +
+        `💬 *Gõ câu hỏi bất kỳ:* Bạn có thể hỏi nối tiếp câu trước (ví dụ: *"giải thích thêm"*, *"sao chép lệnh đó"*, *"chạy thử xem"*...), bot sẽ hiểu chính xác!`;
       await this.sendMessage(incoming.chatId, helpMsg);
+      return;
+    }
+
+    if (lowerText === '/clear' || lowerText === '/reset') {
+      this.clearHistory(incoming.chatId);
+      await this.sendMessage(
+        incoming.chatId,
+        `🧹 *ĐÃ XÓA SẠCH BỘ NHỚ NGỮ CẢNH HỘI THOẠI!*\n\nAI đã quên các câu hỏi trước và sẵn sàng bắt đầu phiên làm việc mới tinh.`
+      );
       return;
     }
 
@@ -160,6 +197,7 @@ class ClientTelegramListenerService {
         `• *Thời gian cập nhật:* \`${now}\`\n` +
         `• *Kênh kết nối:* Web Client Direct Polling\n` +
         `• *Admin Verified:* \`ID: ${incoming.fromId} (Hợp lệ)\`\n` +
+        `• *Bộ nhớ hội thoại:* ${this.getHistory(incoming.chatId).length} tin nhắn\n` +
         `• *Dịch vụ:* Đang trực tuyến và theo dõi an toàn.`;
       await this.sendMessage(incoming.chatId, statusMsg);
       return;
@@ -168,9 +206,18 @@ class ClientTelegramListenerService {
     // 3. Nếu có messageHandler tùy biến (gọi AI hoặc xử lý logic)
     if (this.messageHandler) {
       try {
-        await this.sendMessage(incoming.chatId, `🤖 *Đang phân tích yêu cầu:* _"${incoming.text}"_...`);
+        await this.sendMessage(incoming.chatId, `🤖 *Đang suy luận & đối chiếu ngữ cảnh:* _"${incoming.text}"_...`);
+        
+        // Đính kèm lịch sử hội thoại trước đó để AI hiểu ngữ cảnh nhiều lượt
+        const currentHistory = [...this.getHistory(incoming.chatId)];
+        incoming.history = currentHistory;
+
         const reply = await this.messageHandler(incoming);
         if (reply) {
+          // Lưu lại cả câu hỏi của người dùng và câu trả lời của AI vào bộ nhớ
+          this.appendHistory(incoming.chatId, 'user', incoming.text);
+          this.appendHistory(incoming.chatId, 'assistant', reply);
+
           await this.sendMessage(incoming.chatId, reply);
         }
       } catch (err: unknown) {
@@ -188,15 +235,42 @@ class ClientTelegramListenerService {
   public async sendMessage(chatId: number | string, text: string) {
     if (!this.token) return;
     try {
-      await fetch(`https://api.telegram.org/bot${this.token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: text,
-          parse_mode: 'Markdown'
-        })
-      });
+      // Nếu tin nhắn quá dài (>4000 ký tự), chia nhỏ để không bị Telegram chặn
+      const chunks: string[] = [];
+      const maxLength = 3900;
+      let remaining = text;
+      while (remaining.length > maxLength) {
+        let splitPos = remaining.lastIndexOf('\n', maxLength);
+        if (splitPos === -1 || splitPos < 1000) splitPos = maxLength;
+        chunks.push(remaining.substring(0, splitPos));
+        remaining = remaining.substring(splitPos).trimStart();
+      }
+      chunks.push(remaining);
+
+      for (const chunk of chunks) {
+        const res = await fetch(`https://api.telegram.org/bot${this.token}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: chunk,
+            parse_mode: 'Markdown'
+          })
+        });
+        
+        const data = await res.json();
+        // Fallback plain-text nếu Markdown không hợp lệ
+        if (!data.ok && data.description?.includes('can\'t parse entities')) {
+          await fetch(`https://api.telegram.org/bot${this.token}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: chunk
+            })
+          });
+        }
+      }
     } catch (err) {
       console.error('[Client Telegram] Lỗi gửi tin nhắn:', err);
     }

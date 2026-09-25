@@ -35,11 +35,12 @@ export default function App() {
 
   // Lắng nghe trực tiếp tin nhắn Telegram từ trình duyệt (Client-side long polling)
   useEffect(() => {
-    // Kết nối bộ xử lý tin nhắn AI Agent
+    // Kết nối bộ xử lý tin nhắn AI Agent kèm ngữ cảnh đa lượt
     clientTelegramListener.setMessageHandler(async (incoming) => {
       try {
         const response = await sendAiQuery({
           message: incoming.text,
+          history: incoming.history,
           systemMetrics: metrics ? {
             cpuLoad: metrics.cpu.loadPercent,
             ramUsedPercent: metrics.memory.usedPercent,

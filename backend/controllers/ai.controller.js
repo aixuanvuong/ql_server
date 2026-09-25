@@ -8,7 +8,7 @@ const agentApprovalService = require('../services/agent_approval.service');
  */
 exports.chatWithAssistant = async (req, res) => {
   try {
-    const { message, terminalContext, systemMetrics, executionMode, socketId } = req.body;
+    const { message, terminalContext, systemMetrics, executionMode, socketId, history } = req.body;
 
     if (!message || typeof message !== 'string') {
       return res.status(400).json({
@@ -22,7 +22,8 @@ exports.chatWithAssistant = async (req, res) => {
       terminalContext: terminalContext || '',
       systemMetrics: systemMetrics || null,
       executionMode: executionMode === 'auto_pilot' ? 'auto_pilot' : 'require_approval',
-      socketId: socketId || null
+      socketId: socketId || null,
+      history: Array.isArray(history) ? history : []
     });
 
     return res.status(200).json({

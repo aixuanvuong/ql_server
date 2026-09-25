@@ -29,6 +29,11 @@ export interface CommandApprovalRequestData {
   expiresAt: number;
 }
 
+export interface AiChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
 export interface AiChatPayload {
   message: string;
   terminalContext?: string;
@@ -40,6 +45,7 @@ export interface AiChatPayload {
   };
   executionMode?: 'require_approval' | 'auto_pilot';
   socketId?: string;
+  history?: AiChatMessage[];
 }
 
 export interface AiChatResponse {

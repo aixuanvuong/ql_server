@@ -20,7 +20,9 @@ import {
   XCircle,
   AlertTriangle,
   Clock,
-  Play
+  Play,
+  Trash2,
+  MessageSquare
 } from 'lucide-react';
 import {
   sendAiQuery,
@@ -230,12 +232,22 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
         }
       : undefined;
 
+    // Thu thập lịch sử hội thoại trước đó để gửi cho AI (Tối đa 8 tin nhắn gần nhất)
+    const conversationHistory = messages
+      .filter((m) => m.id !== 'welcome' && m.text.trim())
+      .slice(-8)
+      .map((m) => ({
+        role: (m.sender === 'assistant' ? 'assistant' : 'user') as 'assistant' | 'user',
+        content: m.text
+      }));
+
     const response = await sendAiQuery({
       message: question,
       terminalContext: terminalLogs,
       systemMetrics: metricsSnapshot,
       executionMode: executionMode,
-      socketId: socket?.id
+      socketId: socket?.id,
+      history: conversationHistory
     });
 
     setLoading(false);
@@ -292,6 +304,15 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
                 <span>{currentModel}</span>
                 <SlidersHorizontal className="w-2.5 h-2.5 opacity-70" />
               </button>
+              {messages.filter(m => m.id !== 'welcome').length > 0 && (
+                <span
+                  title="Số tin nhắn trước đó đang được AI nhớ và phân tích ngữ cảnh"
+                  className="text-[9px] px-1.5 py-0.5 rounded-full bg-sky-500/10 text-sky-300 font-mono border border-sky-500/30 flex items-center gap-1"
+                >
+                  <MessageSquare className="w-2.5 h-2.5" />
+                  <span>Nhớ {messages.filter(m => m.id !== 'welcome').length} câu</span>
+                </span>
+              )}
             </div>
             <p className="text-[10px] text-slate-400">
               {executionMode === 'auto_pilot' ? (
@@ -352,6 +373,27 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
             <Terminal className="w-3 h-3 text-purple-400" />
             <span className="hidden md:inline">Log</span>
           </label>
+
+          {/* Nút xóa ngữ cảnh / làm mới phiên chat */}
+          <button
+            type="button"
+            onClick={() => {
+              setMessages([
+                {
+                  id: 'welcome',
+                  sender: 'assistant',
+                  text: '🧹 **Đã làm mới phiên hội thoại!** Ngữ cảnh câu hỏi trước đã được xóa sạch. Tôi đã sẵn sàng nhận yêu cầu mới của bạn.',
+                  suggestions: ['systemctl status', 'free -h', 'uptime'],
+                  timestamp: 'Vừa xong'
+                }
+              ]);
+            }}
+            title="Xóa sạch bộ nhớ ngữ cảnh hội thoại để bắt đầu phiên mới"
+            className="px-2 py-1 rounded-xl bg-slate-900 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 border border-slate-800 hover:border-rose-500/30 text-[11px] flex items-center gap-1 transition-all cursor-pointer"
+          >
+            <Trash2 className="w-3 h-3" />
+            <span className="hidden sm:inline">Xóa nhớ</span>
+          </button>
         </div>
       </div>
 
