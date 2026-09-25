@@ -65,6 +65,9 @@ app.post('/api/network/ai-audit', networkController.auditNetworkWithAi);
 
 // Endpoint trợ lý AI SysAdmin Assistant (Phân tích log terminal và thông số)
 app.post('/api/ai-chat', aiController.chatWithAssistant);
+app.get('/api/ai/config', aiController.getAiConfig);
+app.post('/api/ai/config', aiController.updateAiConfig);
+app.post('/api/ai/test', aiController.testAiConnection);
 
 // --- 2. CẤU HÌNH SOCKET.IO CHO REALTIME VÀ SSH ---
 const io = new Server(server, {

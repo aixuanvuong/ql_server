@@ -205,28 +205,34 @@ Danh sách ứng dụng đang truy cập Internet (Outbound/Inbound Active Traff
 ${internetConns.length > 0 ? internetConns.slice(0, 20).join('\n') : 'Không có kết nối Internet trực tiếp nào'}
 `.trim();
 
-    if (!this.geminiClient) {
+    if (!this.openaiClient) {
+      this.initClient();
+    }
+
+    if (!this.openaiClient) {
       return {
         analysis: `### 🛡️ Đánh Giá An Ninh Mạng Hạ Tầng (Chế Độ Offline)
 - **Cổng mở:** Đang mở ${summary?.listeningPorts || 0} cổng dịch vụ.
 - **Lưu lượng Internet:** Có ${summary?.internetConnections || 0} kết nối đang trao đổi dữ liệu với máy chủ ngoài Internet.
 - **Tiến trình hàng đầu:** ${summary?.topProcesses ? summary.topProcesses.map(p => `${p.name} (${p.count})`).join(', ') : 'N/A'}.
 
-*(Thêm \`GEMINI_API_KEY\` vào file \`.env\` để kích hoạt AI Gemini phân tích chi tiết bảo mật chuyên sâu).*`,
+*(Chưa cấu hình \`OMNIROUTE_API_KEY\` để kết nối Trợ lý AI phân tích chuyên sâu).*`,
         safetyScore: 90,
         suggestedCommands: ['sudo ss -tulpn', 'sudo ufw status verbose']
       };
     }
 
     try {
-      const response = await this.geminiClient.models.generateContent({
-        model: aiConfig.AI_MODEL || 'gemini-3.8-flash',
-        contents: [
+      const response = await this.openaiClient.chat.completions.create({
+        model: this.modelName,
+        messages: [
+          {
+            role: 'system',
+            content: 'Bạn là chuyên gia an ninh mạng & kỹ sư Linux SysAdmin cấp cao.'
+          },
           {
             role: 'user',
-            parts: [
-              {
-                text: `Bạn là chuyên gia an ninh mạng & kỹ sư Linux SysAdmin cấp cao. Hãy phân tích danh sách lưu lượng mạng và các cổng mở dưới đây của máy chủ Ubuntu:
+            content: `Hãy phân tích danh sách lưu lượng mạng và các cổng mở dưới đây của máy chủ Ubuntu:
 
 ${contextText}
 
@@ -236,13 +242,12 @@ Nhiệm vụ của bạn:
 3. Đánh giá các cổng đang mở: Có cổng nào nhạy cảm cần đóng lại hoặc đưa vào sau tường lửa UFW không?
 4. Đưa ra 2-3 câu lệnh Linux thực tế trong block code \`\`\`bash để quản trị viên kiểm tra hoặc bảo vệ hệ thống nếu cần.
 Trả lời súc tích, rõ ràng, định dạng Markdown chuyên nghiệp bằng Tiếng Việt.`
-              }
-            ]
           }
-        ]
+        ],
+        temperature: 0.2
       });
 
-      const responseText = response.text || '';
+      const responseText = response.choices?.[0]?.message?.content || '';
       const commands = this.extractCommands(responseText);
 
       return {
@@ -253,15 +258,155 @@ Trả lời súc tích, rõ ràng, định dạng Markdown chuyên nghiệp bằ
     } catch (err) {
       console.error('[AI Network Audit Error]:', err.message);
       return {
-        analysis: `### ⚠️ Không thể kết nối tới Gemini API: ${err.message}\nKiểm tra lại khóa API hoặc kết nối mạng máy chủ.`,
+        analysis: `### ⚠️ Không thể kết nối tới OmniRoute API: ${err.message}\nKiểm tra lại khóa API hoặc kết nối mạng máy chủ.`,
         safetyScore: 80,
-        suggestedCommands: ['sudo netstat -tlpn']
+        suggestedCommands: ['sudo ss -tlpn']
       };
     }
   }
 
   /**
-   * Bộ phân tích mẫu offline khi chưa nhập GEMINI_API_KEY
+   * Lấy thông tin cấu hình hiện tại của AI Gateway
+   */
+  getConfig() {
+    const key = process.env.OMNIROUTE_API_KEY || process.env.OPENAI_API_KEY || '';
+    const maskedKey = key
+      ? (key.length > 8 ? `${key.slice(0, 4)}••••••••${key.slice(-4)}` : '••••••••')
+      : '';
+
+    return {
+      baseURL: this.baseURL,
+      model: this.modelName,
+      hasKey: !!key,
+      maskedKey: maskedKey,
+      availableModels: [
+        { id: 'gpt-4o', name: 'GPT-4o (Đa năng, thông minh nhất)', provider: 'OpenAI' },
+        { id: 'gpt-4o-mini', name: 'GPT-4o Mini (Phản hồi cực nhanh, tiết kiệm)', provider: 'OpenAI' },
+        { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (Chuyên sâu DevOps & Log)', provider: 'Anthropic' },
+        { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku (Gọn nhẹ, siêu tốc)', provider: 'Anthropic' },
+        { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Bộ nhớ ngữ cảnh cực lớn)', provider: 'Google' },
+        { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Xử lý log dài mượt mà)', provider: 'Google' },
+        { id: 'deepseek-chat', name: 'DeepSeek-V3 / Chat (Hiệu năng cao, chi phí thấp)', provider: 'DeepSeek' }
+      ]
+    };
+  }
+
+  /**
+   * Cập nhật cấu hình mô hình hoặc API Key trực tiếp từ Website
+   */
+  async updateConfig({ model, apiKey }) {
+    const fs = require('fs');
+    const path = require('path');
+
+    if (model && typeof model === 'string') {
+      this.modelName = model.trim();
+      process.env.OMNIROUTE_MODEL = this.modelName;
+    }
+
+    if (apiKey && typeof apiKey === 'string' && apiKey.trim().length > 0) {
+      process.env.OMNIROUTE_API_KEY = apiKey.trim();
+    }
+
+    // Tái khởi tạo Client với cấu hình mới
+    this.initClient();
+
+    // Lưu vào file .env nếu có để duy trì khi reboot
+    try {
+      const envPaths = [
+        path.join(__dirname, '..', '.env'),
+        path.join(process.cwd(), '.env'),
+        path.join(process.cwd(), 'backend', '.env')
+      ];
+
+      for (const envPath of envPaths) {
+        if (fs.existsSync(envPath)) {
+          let envContent = fs.readFileSync(envPath, 'utf8');
+
+          if (model) {
+            if (envContent.includes('OMNIROUTE_MODEL=')) {
+              envContent = envContent.replace(/OMNIROUTE_MODEL=.*/g, `OMNIROUTE_MODEL=${this.modelName}`);
+            } else {
+              envContent += `\nOMNIROUTE_MODEL=${this.modelName}`;
+            }
+          }
+
+          if (apiKey && apiKey.trim().length > 0) {
+            if (envContent.includes('OMNIROUTE_API_KEY=')) {
+              envContent = envContent.replace(/OMNIROUTE_API_KEY=.*/g, `OMNIROUTE_API_KEY=${apiKey.trim()}`);
+            } else {
+              envContent += `\nOMNIROUTE_API_KEY=${apiKey.trim()}`;
+            }
+          }
+
+          fs.writeFileSync(envPath, envContent, 'utf8');
+          console.log(`[AI Service] 💾 Đã lưu cấu hình AI vào file: ${envPath}`);
+          break;
+        }
+      }
+    } catch (saveErr) {
+      console.warn('[AI Service] Không thể ghi file .env (chạy trên runtime tạm thời):', saveErr.message);
+    }
+
+    return {
+      success: true,
+      message: `Đã cập nhật cấu hình AI (Model: ${this.modelName}) thành công!`,
+      config: this.getConfig()
+    };
+  }
+
+  /**
+   * Kiểm tra kết nối trực tiếp đến endpoint OmniRoute (Ping Test)
+   */
+  async testConnection() {
+    if (!this.openaiClient) {
+      this.initClient();
+    }
+
+    if (!this.openaiClient) {
+      return {
+        success: false,
+        latencyMs: 0,
+        message: 'Chưa cấu hình OMNIROUTE_API_KEY. Vui lòng nhập mã khóa API.'
+      };
+    }
+
+    const startTime = Date.now();
+    try {
+      const response = await this.openaiClient.chat.completions.create({
+        model: this.modelName,
+        messages: [
+          { role: 'user', content: 'Trả lời ngắn đúng 2 từ: "KẾT NỐI_OK"' }
+        ],
+        max_tokens: 10,
+        temperature: 0.1
+      });
+
+      const latencyMs = Date.now() - startTime;
+      const reply = response.choices?.[0]?.message?.content?.trim() || 'OK';
+
+      return {
+        success: true,
+        latencyMs,
+        model: this.modelName,
+        baseURL: this.baseURL,
+        reply,
+        message: `Kết nối máy chủ OmniRoute thành công (${latencyMs}ms)!`
+      };
+    } catch (error) {
+      const latencyMs = Date.now() - startTime;
+      return {
+        success: false,
+        latencyMs,
+        model: this.modelName,
+        baseURL: this.baseURL,
+        error: error.message,
+        message: `Lỗi kết nối (${latencyMs}ms): ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Bộ phân tích mẫu offline khi chưa có API Key
    */
   generateFallbackAnalysis(message, logs, metrics) {
     return `### 💡 Phân Tích Hệ Thống Ubuntu (SysAdmin Assistant)
@@ -276,7 +421,7 @@ systemctl --failed
 free -h && df -h
 \`\`\`
 
-*(Để kích hoạt trí tuệ nhân tạo Gemini 3.8 Flash đầy đủ, hãy thêm \`GEMINI_API_KEY\` vào file \`.env\` của Backend).*`;
+*(Để kích hoạt AI đầy đủ, hãy bấm nút "Cấu hình AI" ở góc trên hộp chat để chọn mô hình và điền khóa API OmniRoute).*`;
   }
 }
 

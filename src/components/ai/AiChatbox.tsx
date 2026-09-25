@@ -1,8 +1,9 @@
 // filepath: frontend/src/components/ai/AiChatbox.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Sparkles, Copy, Check, Terminal, Shield, RefreshCw } from 'lucide-react';
-import { sendAiQuery } from '../../api/ai.api';
+import { Bot, Send, Sparkles, Copy, Check, Terminal, Shield, RefreshCw, Settings, SlidersHorizontal } from 'lucide-react';
+import { sendAiQuery, getAiConfigApi } from '../../api/ai.api';
 import { DynamicSystemMetrics } from '../../types/system.types';
+import { AiSettingsModal } from './AiSettingsModal';
 
 interface Message {
   id: string;
@@ -38,7 +39,20 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
   const [includeContext, setIncludeContext] = useState<boolean>(true);
   const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
 
+  // Cấu hình AI trực tiếp trên Website
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [currentModel, setCurrentModel] = useState<string>('gpt-4o');
+
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Tải cấu hình Model hiện tại
+  useEffect(() => {
+    getAiConfigApi().then((res) => {
+      if (res.success && res.data?.model) {
+        setCurrentModel(res.data.model);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -114,10 +128,16 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
           </div>
           <div>
             <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
-              SysAdmin AI Assistant
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-mono">
-                Gemini 3.8
-              </span>
+              SysAdmin AI
+              <button
+                type="button"
+                onClick={() => setIsSettingsOpen(true)}
+                title="Bấm để cấu hình mô hình hoặc khóa API OmniRoute"
+                className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 font-mono flex items-center gap-1 border border-purple-500/30 transition-colors cursor-pointer"
+              >
+                <span>{currentModel}</span>
+                <SlidersHorizontal className="w-2.5 h-2.5 opacity-70" />
+              </button>
             </h3>
             <p className="text-[10px] text-slate-400 flex items-center gap-1">
               <Shield className="w-3 h-3 text-emerald-400" />
@@ -126,17 +146,30 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
           </div>
         </div>
 
-        {/* Toggle Kèm ngữ cảnh Terminal */}
-        <label className="flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer bg-slate-900 px-2 py-1 rounded-lg border border-slate-800 hover:border-slate-700">
-          <input
-            type="checkbox"
-            checked={includeContext}
-            onChange={(e) => setIncludeContext(e.target.checked)}
-            className="rounded accent-purple-500"
-          />
-          <Terminal className="w-3 h-3 text-purple-400" />
-          <span className="hidden sm:inline">Kèm log Terminal</span>
-        </label>
+        <div className="flex items-center gap-2">
+          {/* Nút Cấu hình AI trực tiếp */}
+          <button
+            type="button"
+            onClick={() => setIsSettingsOpen(true)}
+            className="p-1.5 px-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+            title="Cấu hình mô hình và khóa API OmniRoute"
+          >
+            <Settings className="w-3.5 h-3.5 text-purple-400" />
+            <span className="hidden sm:inline text-[11px]">Cấu hình AI</span>
+          </button>
+
+          {/* Toggle Kèm ngữ cảnh Terminal */}
+          <label className="flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer bg-slate-900 px-2 py-1 rounded-lg border border-slate-800 hover:border-slate-700">
+            <input
+              type="checkbox"
+              checked={includeContext}
+              onChange={(e) => setIncludeContext(e.target.checked)}
+              className="rounded accent-purple-500"
+            />
+            <Terminal className="w-3 h-3 text-purple-400" />
+            <span className="hidden sm:inline">Kèm log</span>
+          </label>
+        </div>
       </div>
 
       {/* Danh sách tin nhắn */}
@@ -247,6 +280,13 @@ export const AiChatbox: React.FC<AiChatboxProps> = ({
           </button>
         </form>
       </div>
+
+      {/* Modal Cấu hình AI trực tiếp */}
+      <AiSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onConfigUpdated={(newModel) => setCurrentModel(newModel)}
+      />
     </div>
   );
 };
