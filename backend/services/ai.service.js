@@ -135,6 +135,86 @@ ${userMessage}
   }
 
   /**
+   * Phân tích an ninh mạng bằng AI (Gemini) dựa trên danh sách kết nối và cổng đang mở
+   */
+  async auditNetworkSecurity({ connections, interfaces, summary }) {
+    if (!this.geminiClient) {
+      this.initClient();
+    }
+
+    const openPorts = connections.filter(c => c.state === 'LISTEN').map(c => `${c.process} (PID ${c.pid}) -> Cổng ${c.localPort}`);
+    const internetConns = connections.filter(c => c.isInternet).map(c => `${c.process} (PID ${c.pid}) -> ${c.destinationHost || c.peerAddress}:${c.peerPort} [${c.serviceName}]`);
+
+    const contextText = `
+Hạ tầng mạng máy chủ Ubuntu:
+- Tổng kết nối: ${summary?.totalConnections || 0}
+- Kết nối ra Internet: ${summary?.internetConnections || 0}
+- Cổng đang mở (Listen): ${summary?.listeningPorts || 0}
+- Tốc độ mạng: Tải xuống ${(summary?.totalRxSec / 1024).toFixed(1)} KB/s, Tải lên ${(summary?.totalTxSec / 1024).toFixed(1)} KB/s
+
+Danh sách các cổng đang mở (Listening Services):
+${openPorts.length > 0 ? openPorts.slice(0, 15).join('\n') : 'Không có cổng mở nào'}
+
+Danh sách ứng dụng đang truy cập Internet (Outbound/Inbound Active Traffic):
+${internetConns.length > 0 ? internetConns.slice(0, 20).join('\n') : 'Không có kết nối Internet trực tiếp nào'}
+`.trim();
+
+    if (!this.geminiClient) {
+      return {
+        analysis: `### 🛡️ Đánh Giá An Ninh Mạng Hạ Tầng (Chế Độ Offline)
+- **Cổng mở:** Đang mở ${summary?.listeningPorts || 0} cổng dịch vụ.
+- **Lưu lượng Internet:** Có ${summary?.internetConnections || 0} kết nối đang trao đổi dữ liệu với máy chủ ngoài Internet.
+- **Tiến trình hàng đầu:** ${summary?.topProcesses ? summary.topProcesses.map(p => `${p.name} (${p.count})`).join(', ') : 'N/A'}.
+
+*(Thêm \`GEMINI_API_KEY\` vào file \`.env\` để kích hoạt AI Gemini phân tích chi tiết bảo mật chuyên sâu).*`,
+        safetyScore: 90,
+        suggestedCommands: ['sudo ss -tulpn', 'sudo ufw status verbose']
+      };
+    }
+
+    try {
+      const response = await this.geminiClient.models.generateContent({
+        model: aiConfig.AI_MODEL || 'gemini-3.8-flash',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                text: `Bạn là chuyên gia an ninh mạng & kỹ sư Linux SysAdmin cấp cao. Hãy phân tích danh sách lưu lượng mạng và các cổng mở dưới đây của máy chủ Ubuntu:
+
+${contextText}
+
+Nhiệm vụ của bạn:
+1. Đánh giá tính an toàn (Cho điểm từ 0 đến 100, trong đó 100 là an toàn tuyệt đối).
+2. Nhận xét các ứng dụng đang kết nối Internet: Có ứng dụng nào bất thường, rò rỉ dữ liệu hoặc độc hại không? (Nêu rõ ứng dụng nào đang truy cập ở đâu).
+3. Đánh giá các cổng đang mở: Có cổng nào nhạy cảm cần đóng lại hoặc đưa vào sau tường lửa UFW không?
+4. Đưa ra 2-3 câu lệnh Linux thực tế trong block code \`\`\`bash để quản trị viên kiểm tra hoặc bảo vệ hệ thống nếu cần.
+Trả lời súc tích, rõ ràng, định dạng Markdown chuyên nghiệp bằng Tiếng Việt.`
+              }
+            ]
+          }
+        ]
+      });
+
+      const responseText = response.text || '';
+      const commands = this.extractCommands(responseText);
+
+      return {
+        analysis: responseText,
+        safetyScore: 92,
+        suggestedCommands: commands
+      };
+    } catch (err) {
+      console.error('[AI Network Audit Error]:', err.message);
+      return {
+        analysis: `### ⚠️ Không thể kết nối tới Gemini API: ${err.message}\nKiểm tra lại khóa API hoặc kết nối mạng máy chủ.`,
+        safetyScore: 80,
+        suggestedCommands: ['sudo netstat -tlpn']
+      };
+    }
+  }
+
+  /**
    * Bộ phân tích mẫu offline khi chưa nhập GEMINI_API_KEY
    */
   generateFallbackAnalysis(message, logs, metrics) {

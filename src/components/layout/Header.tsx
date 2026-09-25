@@ -1,6 +1,6 @@
 // filepath: frontend/src/components/layout/Header.tsx
 import React from 'react';
-import { Server, LogOut, Wifi, WifiOff, Terminal, Activity, KeyRound } from 'lucide-react';
+import { Server, LogOut, Wifi, WifiOff, Terminal, Activity, KeyRound, Globe, DownloadCloud } from 'lucide-react';
 import { AuthUser } from '../../types/system.types';
 
 interface HeaderProps {
@@ -9,8 +9,9 @@ interface HeaderProps {
   hostname: string;
   onLogout: () => void;
   onChangeCredentials?: () => void;
-  activeTab: 'monitor' | 'terminal';
-  setActiveTab: (tab: 'monitor' | 'terminal') => void;
+  onOpenUpdate?: () => void;
+  activeTab: 'monitor' | 'network' | 'terminal';
+  setActiveTab: (tab: 'monitor' | 'network' | 'terminal') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -19,6 +20,7 @@ export const Header: React.FC<HeaderProps> = ({
   hostname,
   onLogout,
   onChangeCredentials,
+  onOpenUpdate,
   activeTab,
   setActiveTab
 }) => {
@@ -72,6 +74,17 @@ export const Header: React.FC<HeaderProps> = ({
             Giám sát Phần cứng
           </button>
           <button
+            onClick={() => setActiveTab('network')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              activeTab === 'network'
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Globe className="w-3.5 h-3.5 text-cyan-400" />
+            Hạ Tầng Mạng & Kết Nối
+          </button>
+          <button
             onClick={() => setActiveTab('terminal')}
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
               activeTab === 'terminal'
@@ -90,6 +103,16 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="text-xs font-medium text-slate-200">{user?.username || 'admin'}</div>
             <div className="text-[10px] text-emerald-400 uppercase tracking-wider">{user?.role || 'admin'}</div>
           </div>
+          {onOpenUpdate && (
+            <button
+              onClick={onOpenUpdate}
+              title="Cập nhật hệ thống trực tuyến từ GitHub"
+              className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-cyan-950/60 hover:bg-cyan-600/30 hover:text-cyan-200 text-cyan-400 border border-cyan-500/30 transition-all flex items-center gap-1.5 text-xs cursor-pointer"
+            >
+              <DownloadCloud className="w-4 h-4 text-cyan-400" />
+              <span className="hidden sm:inline font-medium">Cập nhật</span>
+            </button>
+          )}
           {onChangeCredentials && (
             <button
               onClick={onChangeCredentials}

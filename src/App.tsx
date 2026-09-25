@@ -6,9 +6,11 @@ import { useSocket } from './hooks/useSocket';
 import { useSystemStats } from './hooks/useSystemStats';
 import { LoginForm } from './components/auth/LoginForm';
 import { ChangeCredentialsModal } from './components/auth/ChangeCredentialsModal';
+import { UpdateModal } from './components/update/UpdateModal';
 import { Header } from './components/layout/Header';
 import { TabsNav } from './components/layout/TabsNav';
 import { DashboardView } from './components/dashboard/DashboardView';
+import { NetworkView } from './components/network/NetworkView';
 import { WebTerminal } from './components/terminal/WebTerminal';
 
 export default function App() {
@@ -16,8 +18,9 @@ export default function App() {
   const [user, setUser] = useState<AuthUser | null>(
     token ? { username: 'admin', role: 'admin' } : null
   );
-  const [activeTab, setActiveTab] = useState<'monitor' | 'terminal'>('monitor');
+  const [activeTab, setActiveTab] = useState<'monitor' | 'network' | 'terminal'>('monitor');
   const [isChangeCredsOpen, setIsChangeCredsOpen] = useState(false);
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
 
   // Khởi tạo kết nối Socket.io với Token xác thực
   const { socket, isConnected } = useSocket(token);
@@ -58,6 +61,7 @@ export default function App() {
         hostname={staticInfo.hostname}
         onLogout={handleLogout}
         onChangeCredentials={() => setIsChangeCredsOpen(true)}
+        onOpenUpdate={() => setIsUpdateOpen(true)}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
       />
@@ -71,8 +75,16 @@ export default function App() {
         onUpdateSuccess={handleCredentialsUpdated}
       />
 
+      {/* Modal tự động cập nhật hệ thống từ GitHub */}
+      <UpdateModal
+        isOpen={isUpdateOpen}
+        onClose={() => setIsUpdateOpen(false)}
+        token={token}
+        socket={socket}
+      />
+
       {/* 2. Nội dung các Tab chức năng */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 pb-24 md:pb-8">
         {activeTab === 'monitor' ? (
           <DashboardView
             staticInfo={staticInfo}
@@ -80,9 +92,12 @@ export default function App() {
             history={history}
             isConnected={isConnected}
             onOpenTerminal={() => setActiveTab('terminal')}
+            onOpenUpdate={() => setIsUpdateOpen(true)}
           />
+        ) : activeTab === 'network' ? (
+          <NetworkView token={token} />
         ) : (
-          <div className="space-y-4 pb-20 md:pb-8">
+          <div className="space-y-4 pb-12 md:pb-4">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold text-white tracking-tight">Web-based SSH Terminal</h2>

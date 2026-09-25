@@ -13,6 +13,7 @@ interface DashboardViewProps {
   history: { time: string; cpu: number; mem: number }[];
   isConnected: boolean;
   onOpenTerminal: () => void;
+  onOpenUpdate?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -20,7 +21,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   metrics,
   history,
   isConnected,
-  onOpenTerminal
+  onOpenTerminal,
+  onOpenUpdate
 }) => {
   if (!metrics) {
     return (
@@ -34,7 +36,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   return (
     <div className="space-y-5 pb-20 md:pb-8">
       {/* 1. Header Banner: OS & Uptime */}
-      <SystemInfoBanner info={staticInfo} uptimeSeconds={metrics.uptime} />
+      <SystemInfoBanner
+        info={staticInfo}
+        uptimeSeconds={metrics.uptime}
+        onOpenUpdate={onOpenUpdate}
+      />
 
       {/* 2. Quick Stat Cards (Top Row) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

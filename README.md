@@ -78,7 +78,25 @@ Giao diện Menu trực quan sẽ xuất hiện với 6 tính năng:
 - **Bộ nhớ RAM & Ổ đĩa Root**: Phân tích trực quan dung lượng đã dùng, còn trống và tỷ lệ phần trăm (GB/MB).
 - **Thông tin hệ điều hành**: Tên máy chủ (Hostname), phiên bản phân phối Ubuntu, phiên bản nhân Linux Kernel và thời gian hoạt động liên tục (Uptime).
 
-### 2. 💻 Web-based SSH Terminal
+### 2. 🌐 Quản Lý Hạ Tầng Mạng & Giám Sát Lưu Lượng Internet (Network Infrastructure)
+- **Xem ứng dụng nào đang truy cập Internet**: Theo dõi chi tiết từng tiến trình (`node`, `cloudflared`, `nginx`, `sshd`, `curl`...) kèm PID.
+- **Biết ứng dụng truy cập những gì ở đâu**:
+  - Địa chỉ IP & tên miền đích (`destinationHost` qua Reverse DNS, ví dụ `cloudflare.com`, `google.com`, `github.com`...).
+  - Cổng dịch vụ đích (`HTTPS 443`, `DNS 53`, `SSH 22`, `Database`, `Mail`...).
+  - Phân loại rõ ràng kết nối `Internet Công Cộng` hay `Mạng Nội Bộ / LAN`.
+- **Giám sát Cổng Dịch Vụ Đang Mở (Listening Ports)**: Kiểm tra các cổng TCP/UDP đang lắng nghe trên máy chủ.
+- **Quản lý Card Mạng (Network Interfaces)**: Thẻ hiển thị từng adapter (`eth0`, `wlan0`, `docker0`, `tailscale0`, `lo`) với IPv4, IPv6, MAC, Trạng thái (UP/DOWN), MTU, Tốc độ truyền nhận tức thì (RX/TX per second) và tổng dung lượng.
+- **Tiện ích kiểm tra độ trễ (Ping Test) & Phân giải tên miền (DNS Lookup)** trực tiếp từ máy chủ.
+- **Thao tác ngắt kết nối**: Cho phép dừng/kill tiến trình lạ hoặc ngốn băng thông bất thường chỉ với 1 cú click.
+- **🛡️ AI Đánh Giá An Ninh Mạng (Gemini AI Audit)**: Tự động phân tích toàn bộ danh sách kết nối và các cổng mở, cho điểm mức độ an toàn (Safety Score / 100), cảnh báo rủi ro bảo mật và gợi ý các lệnh Linux xử lý.
+
+### 3. 🔄 Tự Động Cập Nhật Trực Tuyến 1-Click (Web Auto-Update)
+- **Không cần SSH thủ công vào máy chủ**: Nút **"Cập nhật"** (1-Click Update) tích hợp ngay trên thanh Header và Dashboard.
+- **Tự động kiểm tra phiên bản mới từ GitHub**: So sánh mã commit cục bộ của máy chủ với commit mới nhất trên nhánh `main` của GitHub `aixuanvuong/ql_server`.
+- **Hiển thị nhật ký thực thi trực tiếp (Realtime Logs)**: WebSocket stream truyền trực tiếp từng bước `git fetch`, `npm install`, `npm run build` và restart `nginx`/`pm2` lên cửa sổ web.
+- **Tự động đếm ngược và reload giao diện**: Trang web tự động làm mới khi máy chủ biên dịch xong, giúp người dùng tận hưởng ngay tính năng mới mà không phải gõ bất kỳ câu lệnh nào.
+
+### 4. 💻 Web-based SSH Terminal
 - Chạy trực tiếp trên trình duyệt bằng thư viện **`xterm.js`**, hỗ trợ đầy đủ 256 màu ANSI, con trỏ nhấp nháy và phím tắt dòng lệnh.
 - **Tối ưu hóa đặc biệt cho điện thoại Android**:
   - Tích hợp thanh phím ảo chuyên dụng (`ESC`, `TAB`, `Ctrl+C`, `Ctrl+D`, `Ctrl+Z`, `|`, `/`, `~`, `htop`, `clear`).

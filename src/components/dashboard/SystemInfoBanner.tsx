@@ -1,14 +1,15 @@
 // filepath: frontend/src/components/dashboard/SystemInfoBanner.tsx
 import React from 'react';
-import { TerminalSquare, Clock, ShieldCheck, Layers } from 'lucide-react';
+import { TerminalSquare, Clock, ShieldCheck, Layers, DownloadCloud } from 'lucide-react';
 import { StaticSystemInfo } from '../../types/system.types';
 
 interface SystemInfoBannerProps {
   info: StaticSystemInfo;
   uptimeSeconds: number;
+  onOpenUpdate?: () => void;
 }
 
-export const SystemInfoBanner: React.FC<SystemInfoBannerProps> = ({ info, uptimeSeconds }) => {
+export const SystemInfoBanner: React.FC<SystemInfoBannerProps> = ({ info, uptimeSeconds, onOpenUpdate }) => {
   // Định dạng Uptime thành Ngày, Giờ, Phút
   const formatUptime = (totalSeconds: number) => {
     if (!totalSeconds || totalSeconds <= 0) return '0 phút';
@@ -53,14 +54,31 @@ export const SystemInfoBanner: React.FC<SystemInfoBannerProps> = ({ info, uptime
           </div>
         </div>
 
-        {/* Right: Uptime Badge */}
-        <div className="flex items-center gap-2 bg-slate-950/80 px-3.5 py-2.5 rounded-xl border border-slate-800 self-start md:self-auto">
-          <Clock className="w-4 h-4 text-emerald-400" />
-          <div>
-            <span className="text-[10px] text-slate-500 block uppercase font-semibold">Thời gian hoạt động (Uptime)</span>
-            <span className="text-xs sm:text-sm font-mono font-medium text-slate-200">
-              {formatUptime(uptimeSeconds)}
-            </span>
+        {/* Right: Badges */}
+        <div className="flex items-center gap-3 self-start md:self-auto">
+          {onOpenUpdate && (
+            <button
+              onClick={onOpenUpdate}
+              className="flex items-center gap-2 bg-cyan-950/60 hover:bg-cyan-900/60 px-3.5 py-2.5 rounded-xl border border-cyan-500/30 text-cyan-300 transition-all cursor-pointer shadow-sm group"
+            >
+              <DownloadCloud className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
+              <div className="text-left">
+                <span className="text-[10px] text-cyan-400/80 block uppercase font-semibold">Tự động cập nhật</span>
+                <span className="text-xs font-mono font-medium text-white flex items-center gap-1">
+                  1-Click Update
+                </span>
+              </div>
+            </button>
+          )}
+
+          <div className="flex items-center gap-2 bg-slate-950/80 px-3.5 py-2.5 rounded-xl border border-slate-800">
+            <Clock className="w-4 h-4 text-emerald-400" />
+            <div>
+              <span className="text-[10px] text-slate-500 block uppercase font-semibold">Thời gian hoạt động (Uptime)</span>
+              <span className="text-xs sm:text-sm font-mono font-medium text-slate-200">
+                {formatUptime(uptimeSeconds)}
+              </span>
+            </div>
           </div>
         </div>
       </div>

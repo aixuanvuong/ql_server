@@ -7,6 +7,8 @@ const cors = require('cors');
 
 const authController = require('./controllers/auth.controller');
 const aiController = require('./controllers/ai.controller');
+const networkController = require('./controllers/network.controller');
+const updateController = require('./controllers/update.controller');
 const socketAuthMiddleware = require('./sockets/socket.auth');
 const registerStatsSocket = require('./sockets/stats.socket');
 const registerSshSocket = require('./sockets/ssh.socket');
@@ -49,6 +51,13 @@ app.get('/api/auth/verify', authController.verifyToken);
 // Endpoint đổi tài khoản và mật khẩu
 app.post('/api/auth/change-credentials', authController.changeCredentials);
 
+// Endpoints Quản lý Hạ tầng Mạng, Lưu lượng Internet & An ninh
+app.get('/api/network/overview', networkController.getNetworkOverview);
+app.post('/api/network/ping', networkController.pingTest);
+app.post('/api/network/lookup', networkController.dnsLookup);
+app.post('/api/network/kill-process', networkController.killProcess);
+app.post('/api/network/ai-audit', networkController.auditNetworkWithAi);
+
 // Endpoint trợ lý AI SysAdmin Assistant (Phân tích log terminal và thông số)
 app.post('/api/ai-chat', aiController.chatWithAssistant);
 
@@ -61,6 +70,11 @@ const io = new Server(server, {
   // Hỗ trợ WebSocket và polling fallback cho mạng di động yếu
   transports: ['websocket', 'polling']
 });
+
+// Endpoints Tự Động Cập Nhật Trực Tiếp Trên Web
+app.get('/api/system/check-update', updateController.checkForUpdates);
+app.post('/api/system/trigger-update', updateController.triggerUpdate(io));
+app.get('/api/system/update-status', updateController.getUpdateStatus);
 
 // Gắn Middleware xác thực JWT cho mọi kết nối WebSocket
 io.use(socketAuthMiddleware);
