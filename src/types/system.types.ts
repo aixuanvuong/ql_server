@@ -44,6 +44,18 @@ export interface SshConfig {
   privateKey?: string;
 }
 
+export interface SavedSshProfile {
+  id: string;
+  name: string;
+  host: string;
+  port: number;
+  username: string;
+  password?: string;
+  savePassword?: boolean;
+  tag?: string;
+  lastConnected?: string;
+}
+
 export interface AuthUser {
   username: string;
   role: string;

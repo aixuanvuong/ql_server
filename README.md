@@ -110,8 +110,13 @@ Giao diện Menu trực quan sẽ xuất hiện với 6 tính năng:
 - **Hiển thị nhật ký thực thi trực tiếp (Realtime Logs)**: WebSocket stream truyền trực tiếp từng bước `git fetch`, `npm install`, `npm run build` và restart `nginx`/`pm2` lên cửa sổ web.
 - **Tự động đếm ngược và reload giao diện**: Trang web tự động làm mới khi máy chủ biên dịch xong, giúp người dùng tận hưởng ngay tính năng mới mà không phải gõ bất kỳ câu lệnh nào.
 
-### 4. 💻 Web-based SSH Terminal
+### 4. 💻 Web-based SSH Terminal & Quản Lý Hồ Sơ Máy Chủ
 - Chạy trực tiếp trên trình duyệt bằng thư viện **`xterm.js`**, hỗ trợ đầy đủ 256 màu ANSI, con trỏ nhấp nháy và phím tắt dòng lệnh.
+- **⚡ Quản lý tài khoản SSH & Kết nối nhanh 1-Click (Quick Connect)**:
+  - Lưu trữ danh bạ nhiều máy chủ VPS với Tên gợi nhớ, Host, Cổng, Username và tùy chọn lưu mật khẩu an toàn trong Local Storage.
+  - Phân loại máy chủ theo nhãn (Tag: `Production`, `Staging`, `Cục bộ`, `Cloud`, `Dự phòng`).
+  - Menu thả xuống **"⚡ Kết nối nhanh"** ngay trên thanh tiêu đề Terminal, bấm chọn máy chủ là kết nối ngay lập tức mà không cần gõ lại thông tin.
+  - Hỗ trợ thêm mới, chỉnh sửa thông số và xóa hồ sơ máy chủ dễ dàng.
 - **Tối ưu hóa đặc biệt cho điện thoại Android**:
   - Tích hợp thanh phím ảo chuyên dụng (`ESC`, `TAB`, `Ctrl+C`, `Ctrl+D`, `Ctrl+Z`, `|`, `/`, `~`, `htop`, `clear`).
   - Cụm phím điều hướng mũi tên (↑ ↓ ← →) giúp duyệt lại lịch sử lệnh bash dễ dàng trên màn hình cảm ứng.

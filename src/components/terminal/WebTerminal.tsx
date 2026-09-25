@@ -3,12 +3,13 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Socket } from 'socket.io-client';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
-import { Terminal as TerminalIcon, RotateCcw, Trash2, Maximize2, Minimize2, Settings, Bot, ChevronDown, ChevronUp } from 'lucide-react';
+import { Terminal as TerminalIcon, RotateCcw, Trash2, Maximize2, Minimize2, Settings, Bot, ChevronDown, ChevronUp, Zap, Server, Bookmark, Plus } from 'lucide-react';
 import { MobileKeyboardBar } from './MobileKeyboardBar';
 import { SshConnectModal } from './SshConnectModal';
-import { SshConfig, DynamicSystemMetrics } from '../../types/system.types';
+import { SshConfig, DynamicSystemMetrics, SavedSshProfile } from '../../types/system.types';
 import { extractTerminalBuffer } from '../../utils/terminalHelper';
 import { AiChatbox } from '../ai/AiChatbox';
+import { getSavedSshProfiles, updateLastConnected } from '../../utils/sshStorage';
 
 interface WebTerminalProps {
   socket: Socket | null;
@@ -26,6 +27,15 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isAiOpen, setIsAiOpen] = useState<boolean>(true);
   const [demoBuffer, setDemoBuffer] = useState<string>('');
+
+  // Quản lý danh sách tài khoản SSH đã lưu để kết nối nhanh
+  const [savedProfiles, setSavedProfiles] = useState<SavedSshProfile[]>([]);
+  const [isQuickMenuOpen, setIsQuickMenuOpen] = useState<boolean>(false);
+
+  // Tải danh sách hồ sơ SSH đã lưu
+  useEffect(() => {
+    setSavedProfiles(getSavedSshProfiles());
+  }, [isModalOpen]);
 
   // Khởi tạo Terminal xterm.js
   useEffect(() => {
@@ -317,6 +327,100 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
 
         {/* Action Controls */}
         <div className="flex items-center gap-1 sm:gap-2">
+          {/* Quick Connect Dropdown cho tài khoản đã lưu */}
+          <div className="relative">
+            <button
+              onClick={() => setIsQuickMenuOpen(!isQuickMenuOpen)}
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+              title="Danh sách máy chủ đã lưu (Kết nối nhanh 1-Click)"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden md:inline">Kết nối nhanh</span>
+              <span className="text-[10px] bg-amber-500/20 px-1.5 py-0.2 rounded font-mono text-amber-300">
+                {savedProfiles.length}
+              </span>
+              <ChevronDown className="w-3 h-3 opacity-70" />
+            </button>
+
+            {isQuickMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsQuickMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-full mt-1.5 w-64 bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl z-50 py-1.5 overflow-hidden animate-in fade-in duration-150">
+                  <div className="px-3 py-1.5 border-b border-slate-800 text-[11px] font-semibold text-slate-400 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <Bookmark className="w-3 h-3 text-amber-400" />
+                      MÁY CHỦ ĐÃ LƯU
+                    </span>
+                    <button
+                      onClick={() => {
+                        setIsQuickMenuOpen(false);
+                        setIsModalOpen(true);
+                      }}
+                      className="text-emerald-400 hover:text-emerald-300 text-[10px] flex items-center gap-0.5 cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Thêm</span>
+                    </button>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto py-1">
+                    {savedProfiles.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-slate-500">
+                        Chưa có tài khoản nào được lưu
+                      </div>
+                    ) : (
+                      savedProfiles.map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => {
+                            setIsQuickMenuOpen(false);
+                            updateLastConnected(p.id);
+                            handleConnectSsh({
+                              host: p.host,
+                              port: p.port,
+                              username: p.username,
+                              password: p.password || undefined
+                            });
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-slate-800 flex items-center justify-between gap-2 text-xs transition-colors cursor-pointer group"
+                        >
+                          <div className="min-w-0">
+                            <div className="font-medium text-white group-hover:text-amber-300 truncate flex items-center gap-1.5">
+                              <Server className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-400 flex-shrink-0" />
+                              <span className="truncate">{p.name}</span>
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono pl-5 truncate">
+                              {p.username}@{p.host}:{p.port}
+                            </div>
+                          </div>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 group-hover:bg-amber-500/20 group-hover:text-amber-300 flex-shrink-0 font-medium">
+                            ⚡ Kết nối
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="border-t border-slate-800 p-1.5 bg-slate-950/60">
+                    <button
+                      onClick={() => {
+                        setIsQuickMenuOpen(false);
+                        setIsModalOpen(true);
+                      }}
+                      className="w-full py-1.5 px-2 text-center text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/30 rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1 font-medium"
+                    >
+                      <Settings className="w-3 h-3" />
+                      <span>Quản lý danh sách máy chủ</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
           <button
             onClick={() => setIsAiOpen(!isAiOpen)}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer border ${
@@ -334,7 +438,7 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
           <button
             onClick={() => setIsModalOpen(true)}
             className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-medium transition-colors cursor-pointer"
-            title="Cấu hình Host & Kết nối SSH"
+            title="Cấu hình Host & Quản lý tài khoản SSH"
           >
             <Settings className="w-3 h-3" />
             <span className="hidden sm:inline">Cấu hình SSH</span>
