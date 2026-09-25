@@ -26,6 +26,40 @@ curl -sSL https://raw.githubusercontent.com/aixuanvuong/ql_server/main/install.s
 >    - Hỗ trợ nhập trực tiếp **Cloudflare Tunnel Token** (gán domain riêng qua Cloudflare Zero Trust).
 >    - Hoặc tự động tạo **Quick Tunnel** miễn phí (`https://xxxx.trycloudflare.com`) dùng ngay lập tức không cần cấu hình DNS.
 > 9. **Bảo mật tuyệt đối (Zero Inbound Ports)**: Không cần mở bất kỳ cổng web nào (80/443/5000) ra ngoài Internet!
+> 10. **Tự động cài đặt lệnh quản trị `quanlysv`** vào `/usr/local/bin/quanlysv`.
+
+---
+
+## 🛠️ Menu Quản Trị Hệ Thống Nhanh (`quanlysv`)
+
+Sau khi cài đặt xong, bất cứ khi nào mở Terminal máy chủ, bạn chỉ cần gõ một chữ duy nhất:
+
+```bash
+sudo quanlysv
+```
+
+Giao diện Menu trực quan sẽ xuất hiện với 4 tính năng:
+
+```text
+╔══════════════════════════════════════════════════════════════════╗
+║       🛠️  BẢNG ĐIỀU KHIỂN QUẢN TRỊ MÁY CHỦ: QUANLYSV          ║
+║       Hệ Thống Giám Sát & Web SSH Terminal + Trợ Lý AI AI       ║
+╚══════════════════════════════════════════════════════════════════╝
+
+  [1] Xem tình trạng ứng dụng đang chạy hay chưa
+      (Kiểm tra Backend PM2, Web Server Nginx, Cloudflare Tunnel, Link URL)
+
+  [2] Cập nhật phiên bản mới từ GitHub
+      (Tự động git pull, build lại Frontend, cập nhật gói và restart)
+
+  [3] Thay đổi tên miền / Cloudflare Tunnel
+      (Cập nhật Cloudflare Tunnel Token, đổi tên miền riêng)
+
+  [4] Xóa toàn bộ dự án ra khỏi máy chủ (Uninstall)
+      (Gỡ bỏ PM2, Nginx config, Cloudflare daemon và xóa sạch thư mục)
+
+  [0] Thoát (Exit)
+```
 
 ---
 

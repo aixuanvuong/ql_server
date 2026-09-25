@@ -278,7 +278,16 @@ ufw allow 22/tcp comment 'SSH Port' >/dev/null 2>&1 || true
 # Có thể mở cổng nội bộ 80 nếu muốn truy cập từ mạng LAN
 ufw allow 80/tcp comment 'Local HTTP' >/dev/null 2>&1 || true
 
-# 13. Xuất thông tin hoàn tất
+# 13. Cài đặt tiện ích quản lý CLI: quanlysv
+echo ""
+echo -e "${YELLOW}⚙️  BƯỚC 11: CÀI ĐẶT MENU QUẢN LÝ NHANH 'quanlysv'...${NC}"
+if [ -f "$INSTALL_DIR/scripts/quanlysv.sh" ]; then
+  cp "$INSTALL_DIR/scripts/quanlysv.sh" /usr/local/bin/quanlysv
+  chmod +x /usr/local/bin/quanlysv
+  echo -e "${GREEN}✓ Đã cài đặt lệnh 'quanlysv' vào /usr/local/bin/quanlysv thành công!${NC}"
+fi
+
+# 14. Xuất thông tin hoàn tất
 echo ""
 echo -e "${GREEN}========================================================================${NC}"
 echo -e "${GREEN}${BOLD}      🎉 CHÚC MỪNG! HỆ THỐNG ĐÃ KẾT NỐI CLOUDFLARE TUNNEL THÀNH CÔNG!     ${NC}"
@@ -291,10 +300,12 @@ echo -e "🔑 ${BOLD}THÔNG TIN ĐĂNG NHẬP:${NC}"
 echo -e "   • Tên đăng nhập: ${GREEN}${ADMIN_USER}${NC}"
 echo -e "   • Mật khẩu     : ${YELLOW}${BOLD}${ADMIN_PASS}${NC}"
 echo ""
+echo -e "🛠️  ${BOLD}LỆNH QUẢN LÝ DỰ ÁN QUA MENU INTERACTIVE:${NC}"
+echo -e "   Từ bất kỳ đâu trên Terminal, chỉ cần gõ: ${CYAN}${BOLD}quanlysv${NC}"
+echo -e "   (Bao gồm: Kiểm tra trạng thái, Cập nhật code, Đổi tên miền, Gỡ cài đặt)"
+echo ""
 echo -e "☁️  ${BOLD}CÁCH GÁN TÊN MIỀN RIÊNG BẤT CỨ LÚC NÀO:${NC}"
-echo -e "   1. Vào ${CYAN}https://one.dash.cloudflare.com${NC} > Networks > Tunnels."
-echo -e "   2. Tạo Tunnel mới và copy Token."
-echo -e "   3. Chạy trên Terminal máy chủ: ${CYAN}cloudflared service install <TOKEN>${NC}"
+echo -e "   Chạy lệnh ${CYAN}quanlysv${NC} > Chọn [3] > Dán Cloudflare Tunnel Token."
 echo ""
 echo -e "📱 ${BOLD}MẸO DÙNG TRÊN ĐIỆN THOẠI ANDROID:${NC}"
 echo -e "   Mở Chrome trên điện thoại > truy cập link HTTPS ở trên >"
