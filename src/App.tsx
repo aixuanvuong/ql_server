@@ -7,6 +7,7 @@ import { useSystemStats } from './hooks/useSystemStats';
 import { LoginForm } from './components/auth/LoginForm';
 import { ChangeCredentialsModal } from './components/auth/ChangeCredentialsModal';
 import { UpdateModal } from './components/update/UpdateModal';
+import { TelegramSettingsModal } from './components/telegram/TelegramSettingsModal';
 import { Header, NavTabType } from './components/layout/Header';
 import { TabsNav } from './components/layout/TabsNav';
 import { DashboardView } from './components/dashboard/DashboardView';
@@ -22,6 +23,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<NavTabType>('monitor');
   const [isChangeCredsOpen, setIsChangeCredsOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const [isTelegramOpen, setIsTelegramOpen] = useState(false);
 
   // Khởi tạo kết nối Socket.io với Token xác thực
   const { socket, isConnected } = useSocket(token);
@@ -63,6 +65,7 @@ export default function App() {
         onLogout={handleLogout}
         onChangeCredentials={() => setIsChangeCredsOpen(true)}
         onOpenUpdate={() => setIsUpdateOpen(true)}
+        onOpenTelegram={() => setIsTelegramOpen(true)}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
       />
@@ -82,6 +85,12 @@ export default function App() {
         onClose={() => setIsUpdateOpen(false)}
         token={token}
         socket={socket}
+      />
+
+      {/* Modal cấu hình Telegram Bot trực tiếp trên Web */}
+      <TelegramSettingsModal
+        isOpen={isTelegramOpen}
+        onClose={() => setIsTelegramOpen(false)}
       />
 
       {/* 2. Nội dung các Tab chức năng */}
@@ -105,6 +114,7 @@ export default function App() {
             metrics={metrics}
             staticInfo={staticInfo}
             onOpenTerminal={() => setActiveTab('terminal')}
+            onOpenTelegram={() => setIsTelegramOpen(true)}
           />
         ) : (
           <div className="space-y-4 pb-12 md:pb-4">

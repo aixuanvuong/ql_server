@@ -13,7 +13,8 @@ import {
   ShieldAlert,
   Server,
   Activity,
-  Layers
+  Layers,
+  Send
 } from 'lucide-react';
 import { DynamicSystemMetrics, StaticSystemInfo } from '../../types/system.types';
 import { AiChatbox } from './AiChatbox';
@@ -23,13 +24,15 @@ interface AgentViewProps {
   metrics: DynamicSystemMetrics | null;
   staticInfo: StaticSystemInfo;
   onOpenTerminal?: () => void;
+  onOpenTelegram?: () => void;
 }
 
 export const AgentView: React.FC<AgentViewProps> = ({
   socket,
   metrics,
   staticInfo,
-  onOpenTerminal
+  onOpenTerminal,
+  onOpenTelegram
 }) => {
   return (
     <div className="space-y-4 pb-20 md:pb-6">
@@ -47,6 +50,16 @@ export const AgentView: React.FC<AgentViewProps> = ({
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono font-semibold border border-purple-500/40">
                 God Mode • MCP Tool Calling
               </span>
+              {onOpenTelegram && (
+                <button
+                  type="button"
+                  onClick={onOpenTelegram}
+                  className="text-[10px] px-2.5 py-0.5 rounded-full bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 font-mono font-semibold border border-sky-500/40 flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <Send className="w-2.5 h-2.5 -rotate-12" />
+                  <span>Cấu hình Telegram Bot</span>
+                </button>
+              )}
             </div>
             <p className="text-xs text-slate-300/80 mt-0.5">
               Đặc vụ AI tự trị có khả năng chẩn đoán sự cố, tự thực thi câu lệnh Linux Bash, quản lý service và khắc phục lỗi trực tiếp.

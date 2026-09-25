@@ -1,5 +1,7 @@
 // filepath: backend/services/telegram.service.js
 const TelegramBot = require('node-telegram-bot-api');
+const fs = require('fs');
+const path = require('path');
 const aiService = require('./ai.service');
 const systemService = require('./system.service');
 const newsService = require('./news.service');
@@ -8,18 +10,30 @@ require('dotenv').config();
 class TelegramService {
   constructor() {
     this.bot = null;
-    this.token = process.env.TELEGRAM_BOT_TOKEN || '';
+    this.token = (process.env.TELEGRAM_BOT_TOKEN || '').trim();
     this.adminId = (process.env.TELEGRAM_ADMIN_ID || '').toString().trim();
-    this.isEnabled = false;
+    this.isEnabled = process.env.TELEGRAM_BOT_ENABLED !== 'false';
+    this.isRunning = false;
+    this.botInfo = null;
+    this.lastError = null;
     this.chatHistories = new Map(); // Lưu ngữ cảnh hội thoại đa lượt theo Chat ID
   }
 
   /**
    * Khởi tạo Telegram Bot ở chế độ Polling
    */
-  init() {
-    this.token = process.env.TELEGRAM_BOT_TOKEN || '';
-    this.adminId = (process.env.TELEGRAM_ADMIN_ID || '').toString().trim();
+  async init() {
+    this.token = (process.env.TELEGRAM_BOT_TOKEN || this.token || '').trim();
+    this.adminId = (process.env.TELEGRAM_ADMIN_ID || this.adminId || '').toString().trim();
+    this.isEnabled = process.env.TELEGRAM_BOT_ENABLED !== 'false';
+
+    // Dừng bot cũ nếu đang chạy trước khi khởi tạo lại
+    await this.stop();
+
+    if (!this.isEnabled) {
+      console.log('[Telegram Bot] ⏸️ Telegram ChatOps đang ở trạng thái TẮT (Disabled).');
+      return;
+    }
 
     if (!this.token || this.token.includes('your_telegram_bot_token')) {
       console.log('[Telegram Bot] ℹ️ Chưa thiết lập TELEGRAM_BOT_TOKEN trong .env. Telegram ChatOps tạm thời ở chế độ tắt.');
@@ -27,22 +41,262 @@ class TelegramService {
     }
 
     if (!this.adminId) {
-      console.warn('[Telegram Bot] ⚠️ CẢNH BÁO: Chưa cấu hình TELEGRAM_ADMIN_ID trong .env. Bot sẽ từ chối tin nhắn từ tất cả người dùng để bảo vệ máy chủ.');
+      console.warn('[Telegram Bot] ⚠️ CẢNH BÁO: Chưa cấu hình TELEGRAM_ADMIN_ID. Bot sẽ từ chối tin nhắn từ tất cả người dùng để bảo vệ máy chủ.');
     }
 
     try {
       this.bot = new TelegramBot(this.token, { polling: true });
-      this.isEnabled = true;
-      console.log(`[Telegram Bot] 🚀 Khởi động Telegram ChatOps Bot thành công! Đang bảo vệ bởi Admin ID: ${this.adminId || 'CHƯA ĐẶT'}`);
+      this.isRunning = true;
+      this.lastError = null;
+
+      // Lấy thông tin tài khoản Bot từ Telegram API
+      try {
+        const me = await this.bot.getMe();
+        this.botInfo = {
+          id: me.id,
+          username: me.username || '',
+          firstName: me.first_name || '',
+          canJoinGroups: me.can_join_groups,
+          canReadAllGroupMessages: me.can_read_all_group_messages
+        };
+        console.log(`[Telegram Bot] 🚀 Kết nối Telegram Bot thành công: @${this.botInfo.username} (${this.botInfo.firstName})! Đang bảo vệ bởi Admin ID: ${this.adminId || 'CHƯA ĐẶT'}`);
+      } catch (meErr) {
+        console.warn('[Telegram Bot] ⚠️ Kết nối bot nhưng chưa lấy được getMe:', meErr.message);
+      }
 
       // Xử lý lỗi polling không làm gián đoạn server
       this.bot.on('polling_error', (error) => {
+        this.lastError = error.message || String(error);
         console.warn('[Telegram Bot] Polling warning:', error.code || error.message);
       });
 
       this.registerHandlers();
     } catch (err) {
+      this.isRunning = false;
+      this.lastError = err.message;
       console.error('[Telegram Bot] ❌ Khởi tạo thất bại:', err.message);
+    }
+  }
+
+  /**
+   * Dừng tiến trình Polling an toàn
+   */
+  async stop() {
+    if (this.bot) {
+      try {
+        await this.bot.stopPolling();
+      } catch (err) {
+        console.warn('[Telegram Bot] Dừng bot:', err.message);
+      }
+      this.bot = null;
+    }
+    this.isRunning = false;
+    this.botInfo = null;
+  }
+
+  /**
+   * Cập nhật cấu hình Telegram Bot từ giao diện Web
+   * @param {object} params
+   * @param {string} [params.botToken] - Token mới từ BotFather
+   * @param {string} [params.adminId] - ID của Admin trên Telegram
+   * @param {boolean} [params.enabled] - Trạng thái bật/tắt Bot
+   */
+  async reconfigure({ botToken, adminId, enabled }) {
+    if (typeof enabled === 'boolean') {
+      this.isEnabled = enabled;
+      process.env.TELEGRAM_BOT_ENABLED = String(enabled);
+    }
+
+    if (botToken !== undefined && typeof botToken === 'string' && botToken.trim().length > 0) {
+      this.token = botToken.trim();
+      process.env.TELEGRAM_BOT_TOKEN = this.token;
+    }
+
+    if (adminId !== undefined) {
+      this.adminId = String(adminId).trim();
+      process.env.TELEGRAM_ADMIN_ID = this.adminId;
+    }
+
+    // Ghi vào file .env trên hệ thống để bảo lưu sau khi khởi động lại
+    this.saveToEnvFiles();
+
+    // Khởi động lại Bot với cấu hình mới
+    await this.init();
+
+    return this.getConfig();
+  }
+
+  /**
+   * Lưu cấu hình vào các file .env tiềm năng
+   */
+  saveToEnvFiles() {
+    const potentialPaths = [
+      path.resolve(__dirname, '../.env'),
+      path.resolve(__dirname, '../../backend/.env'),
+      path.resolve(__dirname, '../../.env'),
+      path.resolve(process.cwd(), '.env'),
+      path.resolve(process.cwd(), 'backend', '.env'),
+      '/.env',
+      '/backend/.env'
+    ];
+
+    potentialPaths.forEach((filePath) => {
+      try {
+        if (fs.existsSync(filePath)) {
+          let content = fs.readFileSync(filePath, 'utf8');
+
+          // Cập nhật TELEGRAM_BOT_TOKEN
+          if (this.token && !this.token.includes('your_telegram_bot_token')) {
+            if (content.includes('TELEGRAM_BOT_TOKEN=')) {
+              content = content.replace(/^TELEGRAM_BOT_TOKEN=.*/m, `TELEGRAM_BOT_TOKEN="${this.token}"`);
+            } else {
+              content += `\nTELEGRAM_BOT_TOKEN="${this.token}"`;
+            }
+          }
+
+          // Cập nhật TELEGRAM_ADMIN_ID
+          if (content.includes('TELEGRAM_ADMIN_ID=')) {
+            content = content.replace(/^TELEGRAM_ADMIN_ID=.*/m, `TELEGRAM_ADMIN_ID="${this.adminId}"`);
+          } else {
+            content += `\nTELEGRAM_ADMIN_ID="${this.adminId}"`;
+          }
+
+          // Cập nhật TELEGRAM_BOT_ENABLED
+          if (content.includes('TELEGRAM_BOT_ENABLED=')) {
+            content = content.replace(/^TELEGRAM_BOT_ENABLED=.*/m, `TELEGRAM_BOT_ENABLED="${this.isEnabled}"`);
+          } else {
+            content += `\nTELEGRAM_BOT_ENABLED="${this.isEnabled}"`;
+          }
+
+          fs.writeFileSync(filePath, content, 'utf8');
+        }
+      } catch (err) {
+        console.warn(`[Telegram Bot] Không thể ghi cấu hình vào ${filePath}:`, err.message);
+      }
+    });
+  }
+
+  /**
+   * Lấy cấu hình và trạng thái an toàn để hiển thị trên Web UI
+   */
+  getConfig() {
+    const token = this.token || '';
+    const hasValidToken = !!token && !token.includes('your_telegram_bot_token');
+    const maskedToken = hasValidToken
+      ? (token.length > 12 ? `${token.slice(0, 6)}••••••••${token.slice(-4)}` : '••••••••')
+      : '';
+
+    let status = 'not_configured';
+    if (!hasValidToken) {
+      status = 'not_configured';
+    } else if (!this.isEnabled) {
+      status = 'stopped';
+    } else if (this.isRunning && this.botInfo) {
+      status = 'running';
+    } else if (this.lastError) {
+      status = 'error';
+    } else if (this.isRunning) {
+      status = 'running';
+    }
+
+    return {
+      enabled: this.isEnabled,
+      isRunning: this.isRunning,
+      hasToken: hasValidToken,
+      maskedToken,
+      adminId: this.adminId,
+      botInfo: this.botInfo,
+      status,
+      lastError: this.lastError
+    };
+  }
+
+  /**
+   * Thử nghiệm token với Telegram API (không cần chạy polling)
+   * @param {string} [tokenToTest] 
+   */
+  async testConnection(tokenToTest) {
+    const token = (tokenToTest && tokenToTest.trim()) ? tokenToTest.trim() : this.token;
+
+    if (!token || token.includes('your_telegram_bot_token')) {
+      return {
+        success: false,
+        message: 'Vui lòng cung cấp Telegram Bot Token hợp lệ để kiểm tra.'
+      };
+    }
+
+    const startTime = Date.now();
+    try {
+      const testBot = new TelegramBot(token, { polling: false });
+      const me = await testBot.getMe();
+      const latencyMs = Date.now() - startTime;
+
+      return {
+        success: true,
+        message: `Xác thực thành công với Telegram! Bot: @${me.username} (${me.first_name})`,
+        latencyMs,
+        bot: {
+          id: me.id,
+          username: me.username || '',
+          firstName: me.first_name || '',
+          canJoinGroups: me.can_join_groups
+        }
+      };
+    } catch (err) {
+      return {
+        success: false,
+        message: `Lỗi kết nối Telegram API: ${err.message}`,
+        error: err.message
+      };
+    }
+  }
+
+  /**
+   * Gửi một thông điệp thử nghiệm tới Admin ID
+   * @param {string|number} [targetChatId]
+   * @param {string} [customMessage]
+   */
+  async sendTestNotification(targetChatId, customMessage) {
+    const targetId = targetChatId || this.adminId;
+
+    if (!this.bot && (!this.token || this.token.includes('your_telegram_bot_token'))) {
+      return {
+        success: false,
+        message: 'Bot chưa được khởi tạo. Vui lòng cấu hình Token trước.'
+      };
+    }
+
+    if (!targetId) {
+      return {
+        success: false,
+        message: 'Chưa cấu hình Telegram Admin Chat ID.'
+      };
+    }
+
+    const activeBot = this.bot || new TelegramBot(this.token, { polling: false });
+    const now = new Date().toLocaleString('vi-VN');
+    const text = customMessage || (
+      `🔔 *[UBUNTU SYSMONITOR - TEST KẾT NỐI]*\n\n` +
+      `✅ Xin chào! Đây là tin nhắn thử nghiệm gửi từ giao diện Web Dashboard.\n` +
+      `• *Thời gian:* \`${now}\`\n` +
+      `• *Trạng thái:* Kết nối ChatOps 1-1 hoàn toàn thông suốt!\n` +
+      `• *Admin ID:* \`${targetId}\`\n\n` +
+      `_Bạn có thể gõ /help hoặc gửi câu hỏi bất kỳ để điều khiển máy chủ!_`
+    );
+
+    try {
+      await activeBot.sendMessage(targetId, text, { parse_mode: 'Markdown' });
+      return {
+        success: true,
+        message: `Đã gửi tin nhắn thử nghiệm thành công tới ID: ${targetId}`,
+        sentTo: targetId
+      };
+    } catch (err) {
+      return {
+        success: false,
+        message: `Không thể gửi tin nhắn tới ID ${targetId}: ${err.message}. Hãy chắc chắn bạn đã nhấn START (/start) với Bot trước đó!`,
+        error: err.message
+      };
     }
   }
 
@@ -104,8 +358,7 @@ class TelegramService {
     if (text.length <= MAX_LENGTH) {
       try {
         return await this.bot.sendMessage(chatId, text, { parse_mode: 'Markdown', ...options });
-      } catch (mdErr) {
-        // Fallback gửi plain-text nếu cú pháp Markdown bị lỗi do ký tự gạch dưới trong câu lệnh bash
+      } catch {
         return await this.bot.sendMessage(chatId, text, { ...options });
       }
     }
@@ -149,7 +402,7 @@ class TelegramService {
         try {
           await this.bot.sendMessage(
             chatId,
-            `⛔ *TRUY CẬP BỊ TỪ CHỐI*\n\nBạn không có quyền điều khiển máy chủ này.\nID của bạn: \`${fromId}\`\n\nVui lòng cấu hình đúng \`TELEGRAM_ADMIN_ID\` trong file \`.env\`.`,
+            `⛔ *TRUY CẬP BỊ TỪ CHỐI*\n\nBạn không có quyền điều khiển máy chủ này.\nID của bạn: \`${fromId}\`\n\nVui lòng cấu hình đúng \`TELEGRAM_ADMIN_ID\` trong file \`.env\` hoặc trên giao diện Web Dashboard.`,
             { parse_mode: 'Markdown' }
           );
         } catch {

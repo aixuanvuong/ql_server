@@ -9,6 +9,7 @@ const authController = require('./controllers/auth.controller');
 const aiController = require('./controllers/ai.controller');
 const networkController = require('./controllers/network.controller');
 const updateController = require('./controllers/update.controller');
+const telegramController = require('./controllers/telegram.controller');
 const securityController = require('./controllers/security.controller');
 const securityService = require('./services/security.service');
 const selfhealingController = require('./controllers/selfhealing.controller');
@@ -73,6 +74,12 @@ app.get('/api/ai/pending-approvals', aiController.getPendingApprovals);
 app.get('/api/ai/config', aiController.getAiConfig);
 app.post('/api/ai/config', aiController.updateAiConfig);
 app.post('/api/ai/test', aiController.testAiConnection);
+
+// Endpoints Quản lý và Cấu hình Telegram ChatOps Bot trực tiếp trên Web
+app.get('/api/telegram/config', telegramController.getTelegramConfig);
+app.post('/api/telegram/config', telegramController.updateTelegramConfig);
+app.post('/api/telegram/test-connection', telegramController.testTelegramConnection);
+app.post('/api/telegram/send-test', telegramController.sendTestNotification);
 
 // --- 2. CẤU HÌNH SOCKET.IO CHO REALTIME VÀ SSH ---
 const io = new Server(server, {

@@ -11,7 +11,8 @@ import {
   Globe,
   DownloadCloud,
   Bot,
-  Zap
+  Zap,
+  Send
 } from 'lucide-react';
 import { AuthUser } from '../../types/system.types';
 
@@ -24,6 +25,7 @@ interface HeaderProps {
   onLogout: () => void;
   onChangeCredentials?: () => void;
   onOpenUpdate?: () => void;
+  onOpenTelegram?: () => void;
   activeTab: NavTabType;
   setActiveTab: (tab: NavTabType) => void;
 }
@@ -35,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
   onLogout,
   onChangeCredentials,
   onOpenUpdate,
+  onOpenTelegram,
   activeTab,
   setActiveTab
 }) => {
@@ -151,6 +154,17 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <DownloadCloud className="w-4 h-4 text-cyan-400" />
               <span className="hidden lg:inline font-medium">Cập nhật</span>
+            </button>
+          )}
+
+          {onOpenTelegram && (
+            <button
+              onClick={onOpenTelegram}
+              title="Cấu hình Telegram Bot ChatOps"
+              className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-sky-950/60 hover:bg-sky-600/30 text-sky-400 border border-sky-500/30 transition-all flex items-center gap-1.5 text-xs cursor-pointer"
+            >
+              <Send className="w-4 h-4 text-sky-400 -rotate-12" />
+              <span className="hidden lg:inline font-medium">Telegram</span>
             </button>
           )}
 
