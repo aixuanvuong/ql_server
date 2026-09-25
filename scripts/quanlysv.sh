@@ -118,13 +118,13 @@ update_version() {
   echo ""
   echo -e "${CYAN}→ Đang cập nhật gói Backend...${NC}"
   cd "$INSTALL_DIR/backend" || cd "$INSTALL_DIR"
-  npm install --production
+  npm install --production --legacy-peer-deps
 
   # Cập nhật Frontend
   echo ""
   echo -e "${CYAN}→ Đang biên dịch lại Frontend...${NC}"
   cd "$INSTALL_DIR/frontend" 2>/dev/null || cd "$INSTALL_DIR"
-  npm install
+  npm install --legacy-peer-deps
   npm run build
 
   mkdir -p "$WEB_ROOT"

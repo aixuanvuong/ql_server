@@ -136,7 +136,7 @@ NODE_ENV=production
 EOF
 
 echo -e "${CYAN}→ Đang cài đặt thư viện Backend...${NC}"
-npm install --production
+npm install --production --legacy-peer-deps
 
 # 8. Cấu hình Frontend & Build
 echo ""
@@ -149,7 +149,7 @@ VITE_API_URL=
 EOF
 
 echo -e "${CYAN}→ Đang cài đặt thư viện Frontend và build tĩnh...${NC}"
-npm install
+npm install --legacy-peer-deps
 npm run build
 
 mkdir -p "$WEB_ROOT"
