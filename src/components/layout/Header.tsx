@@ -29,6 +29,7 @@ interface HeaderProps {
   onChangeCredentials?: () => void;
   onOpenUpdate?: () => void;
   onOpenTelegram?: () => void;
+  onOpenConnectModal?: () => void;
   activeTab: NavTabType;
   setActiveTab: (tab: NavTabType) => void;
 }
@@ -41,6 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
   onChangeCredentials,
   onOpenUpdate,
   onOpenTelegram,
+  onOpenConnectModal,
   activeTab,
   setActiveTab
 }) => {
@@ -64,22 +66,27 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center gap-1.5 mt-1">
               <span
                 className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                  isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
+                  isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500 animate-pulse'
                 }`}
               />
-              <span className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 truncate font-mono">
+              <button
+                type="button"
+                onClick={onOpenConnectModal}
+                className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 flex items-center gap-1 truncate font-mono cursor-pointer transition-colors"
+                title="Bấm để xem và cấu hình kết nối máy chủ"
+              >
                 {isConnected ? (
                   <>
                     <Wifi className="w-3 h-3 text-emerald-500 dark:text-emerald-400 flex-shrink-0" />
-                    <span>Realtime WS</span>
+                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold">Máy Chủ Thật (Online)</span>
                   </>
                 ) : (
                   <>
-                    <WifiOff className="w-3 h-3 text-rose-500 dark:text-rose-400 flex-shrink-0" />
-                    <span>Mất kết nối</span>
+                    <WifiOff className="w-3 h-3 text-amber-500 flex-shrink-0" />
+                    <span className="text-amber-700 dark:text-amber-400 font-semibold underline">Chế độ Demo (Bấm kết nối)</span>
                   </>
                 )}
-              </span>
+              </button>
             </div>
           </div>
         </div>

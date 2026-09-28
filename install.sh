@@ -249,6 +249,8 @@ else
   # Tạo một service Quick Tunnel (chạy ngầm tự động qua systemd trỏ vào cổng WEB_PORT)
   echo -e "${CYAN}→ Khởi động Cloudflare Quick Tunnel tự động (trỏ vào cổng ${WEB_PORT})...${NC}"
   
+  CF_BIN=$(command -v cloudflared || which cloudflared || echo "/usr/bin/cloudflared")
+
   cat << EOF > /etc/systemd/system/cloudflared-quick.service
 [Unit]
 Description=Cloudflare Quick Tunnel for QL Server
@@ -256,7 +258,7 @@ After=network.target nginx.service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/cloudflared tunnel --url http://127.0.0.1:${WEB_PORT}
+ExecStart=${CF_BIN} tunnel --url http://127.0.0.1:${WEB_PORT} --no-autoupdate
 StandardOutput=append:/var/log/cloudflared-quick.log
 StandardError=append:/var/log/cloudflared-quick.log
 Restart=always
@@ -266,14 +268,14 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-  # Copy cloudflared vào /usr/local/bin nếu cần
-  cp \$(which cloudflared) /usr/local/bin/cloudflared 2>/dev/null || true
+  mkdir -p /var/log
+  touch /var/log/cloudflared-quick.log
   systemctl daemon-reload
   systemctl restart cloudflared-quick.service
   systemctl enable cloudflared-quick.service
 
-  # Đợi 3 giây để lấy URL từ log
-  sleep 4
+  # Đợi 5 giây để lấy URL từ log
+  sleep 5
   QUICK_URL=\$(grep -o 'https://[-a-zA-Z0-9@:%._\+~#=]*.trycloudflare.com' /var/log/cloudflared-quick.log | tail -n 1 || true)
   if [ -n "\$QUICK_URL" ]; then
     PUBLIC_URL="\$QUICK_URL"

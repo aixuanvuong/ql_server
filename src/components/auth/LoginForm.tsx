@@ -63,20 +63,51 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Server Backend URL */}
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <Globe className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-              Địa chỉ Backend Agent (IP / Domain)
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                Địa chỉ Backend Agent (IP / Domain)
+              </label>
+
+              {typeof window !== 'undefined' && window.location.origin && serverUrl !== window.location.origin && !window.location.origin.includes(':3000') && !window.location.origin.includes(':5173') && (
+                <button
+                  type="button"
+                  onClick={() => setServerUrl(window.location.origin)}
+                  className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-mono cursor-pointer"
+                >
+                  Dùng web hiện tại
+                </button>
+              )}
+            </div>
+
             <input
               type="text"
               value={serverUrl}
               onChange={(e) => setServerUrl(e.target.value)}
-              placeholder="http://192.168.1.100:5000 hoặc http://localhost:5000"
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+              placeholder="https://your-domain.trycloudflare.com hoặc http://localhost:5000"
+              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all font-mono"
               required
             />
+
+            {/* Cảnh báo Mixed Content nếu đang mở HTTPS nhưng lại nhập HTTP IP nội bộ */}
+            {typeof window !== 'undefined' && window.location.protocol === 'https:' && serverUrl.startsWith('http://') && (
+              <div className="mt-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-[11px] flex items-start gap-1.5">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-500" />
+                <span>
+                  Bạn đang xem trang qua HTTPS từ xa. Trình duyệt sẽ chặn kết nối tới <code>http://192.168...</code>.{' '}
+                  <button
+                    type="button"
+                    onClick={() => setServerUrl(window.location.origin)}
+                    className="font-bold underline text-emerald-600 dark:text-emerald-400 cursor-pointer ml-1"
+                  >
+                    Bấm vào đây để tự động dùng link HTTPS hiện tại
+                  </button>
+                </span>
+              </div>
+            )}
+
             <span className="text-[11px] text-slate-500 mt-1 block">
-              Địa chỉ máy chủ Ubuntu chạy file server.js
+              Mẹo: Khi dùng từ xa qua 4G, dùng link <strong>Cloudflare Tunnel (HTTPS)</strong> thay vì IP 192.168.*
             </span>
           </div>
 

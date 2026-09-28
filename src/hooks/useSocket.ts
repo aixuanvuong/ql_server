@@ -1,5 +1,5 @@
 // filepath: frontend/src/hooks/useSocket.ts
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { getStoredServerUrl, getStoredToken } from '../api/auth.api';
 
@@ -7,10 +7,15 @@ import { getStoredServerUrl, getStoredToken } from '../api/auth.api';
  * Hook quản lý kết nối Socket.io client
  * Tự động truyền token xác thực JWT và xử lý kết nối lại
  */
-export function useSocket(token: string | null) {
+export function useSocket(token: string | null, customUrl?: string) {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [socketError, setSocketError] = useState<string | null>(null);
+  const [reconnectCount, setReconnectCount] = useState<number>(0);
   const socketRef = useRef<Socket | null>(null);
+
+  const reconnect = useCallback(() => {
+    setReconnectCount(prev => prev + 1);
+  }, []);
 
   useEffect(() => {
     if (!token) {
@@ -22,7 +27,7 @@ export function useSocket(token: string | null) {
       return;
     }
 
-    const serverUrl = getStoredServerUrl();
+    const serverUrl = customUrl || getStoredServerUrl();
     const cleanUrl = serverUrl.replace(/\/+$/, '');
 
     // Khởi tạo Socket.io client kèm Token trong handshake auth
@@ -31,9 +36,9 @@ export function useSocket(token: string | null) {
         token: token || getStoredToken()
       },
       transports: ['websocket', 'polling'],
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 8,
       reconnectionDelay: 2000,
-      timeout: 5000
+      timeout: 8000
     });
 
     socketRef.current = socketInstance;
@@ -48,7 +53,7 @@ export function useSocket(token: string | null) {
       setSocketError(err.message || 'Lỗi kết nối WebSocket');
     });
 
-    socketInstance.on('disconnect', (reason) => {
+    socketInstance.on('disconnect', (_reason) => {
       setIsConnected(false);
     });
 
@@ -56,11 +61,12 @@ export function useSocket(token: string | null) {
       socketInstance.disconnect();
       socketRef.current = null;
     };
-  }, [token]);
+  }, [token, customUrl, reconnectCount]);
 
   return {
     socket: socketRef.current,
     isConnected,
-    socketError
+    socketError,
+    reconnect
   };
 }

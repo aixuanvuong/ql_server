@@ -17,14 +17,31 @@ export const removeStoredToken = (): void => {
 };
 
 export const getStoredServerUrl = (): string => {
-  const stored = localStorage.getItem(SERVER_URL_KEY);
-  if (stored) return stored;
   if (typeof window !== 'undefined' && window.location.origin) {
-    // Nếu đang chạy trên web thật hoặc qua Cloudflare Tunnel, dùng luôn origin hiện tại
-    if (!window.location.origin.includes(':3000') && !window.location.origin.includes(':5173')) {
-      return window.location.origin;
+    const origin = window.location.origin;
+    const isHttps = window.location.protocol === 'https:';
+    const isDevPort = origin.includes(':3000') || origin.includes(':5173');
+
+    const stored = localStorage.getItem(SERVER_URL_KEY);
+    // Nếu đang truy cập qua HTTPS (ví dụ Cloudflare Tunnel) hoặc domain thực tế:
+    // Tự động bỏ qua địa chỉ IP nội bộ http://192.168.* hoặc http://localhost cũ đã lưu trong máy
+    if (stored) {
+      const isStoredLocal = stored.includes('192.168.') || stored.includes('localhost') || stored.includes('127.0.0.1') || stored.startsWith('http://10.') || stored.startsWith('http://172.');
+      if (isHttps && isStoredLocal) {
+        // Tránh lỗi Mixed Content chặn truy cập từ xa
+        localStorage.setItem(SERVER_URL_KEY, origin);
+        return origin;
+      }
+      return stored;
+    }
+
+    if (!isDevPort) {
+      return origin;
     }
   }
+
+  const stored = localStorage.getItem(SERVER_URL_KEY);
+  if (stored) return stored;
   return (import.meta.env.VITE_API_URL as string) || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000');
 };
 

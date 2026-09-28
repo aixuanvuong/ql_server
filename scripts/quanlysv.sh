@@ -75,6 +75,7 @@ show_status() {
     fi
   else
     echo -e "   • Trạng thái: ${RED}${BOLD}● KHÔNG HOẠT ĐỘNG${NC}"
+    echo -e "     ${YELLOW}👉 Gợi ý: Chọn Mục 3 trong Menu để khởi động lại Cloudflare Tunnel truy cập từ xa!${NC}"
   fi
 
   # 4. Cổng mạng & Địa chỉ truy cập nội bộ (Local / LAN)
@@ -224,10 +225,62 @@ change_domain() {
     2)
       echo -e "${CYAN}→ Đang tạo lại Cloudflare Quick Tunnel mới...${NC}"
       systemctl stop cloudflared 2>/dev/null || true
+
+      # Kiểm tra và cài đặt cloudflared nếu chưa có
+      if ! command -v cloudflared &>/dev/null; then
+        echo -e "${YELLOW}→ Đang cài đặt gói cloudflared...${NC}"
+        ARCH=$(dpkg --print-architecture 2>/dev/null || echo "amd64")
+        if [ "$ARCH" = "arm64" ]; then
+          curl -sL -o /tmp/cloudflared.deb "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64.deb"
+        else
+          curl -sL -o /tmp/cloudflared.deb "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb"
+        fi
+        dpkg -i /tmp/cloudflared.deb 2>/dev/null || apt-get install -f -y
+        rm -f /tmp/cloudflared.deb
+      fi
+
+      CF_BIN=$(command -v cloudflared || echo "/usr/bin/cloudflared")
+      CURRENT_WEB_PORT=$(grep -E '^WEB_PORT=' "$INSTALL_DIR/backend/.env" 2>/dev/null | cut -d '=' -f2)
+      CURRENT_WEB_PORT=${CURRENT_WEB_PORT:-80}
+
+      # Tạo/cập nhật systemd service cho Quick Tunnel
+      cat << EOF > /etc/systemd/system/cloudflared-quick.service
+[Unit]
+Description=Cloudflare Quick Tunnel for QL Server
+After=network.target nginx.service
+
+[Service]
+Type=simple
+ExecStart=${CF_BIN} tunnel --url http://127.0.0.1:${CURRENT_WEB_PORT} --no-autoupdate
+StandardOutput=append:/var/log/cloudflared-quick.log
+StandardError=append:/var/log/cloudflared-quick.log
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+      > /var/log/cloudflared-quick.log
+      systemctl daemon-reload
       systemctl restart cloudflared-quick.service
-      sleep 4
+      systemctl enable cloudflared-quick.service
+
+      echo -e "${CYAN}→ Đang khởi tạo kết nối Cloudflare (khoảng 5 giây)...${NC}"
+      sleep 5
+
       QUICK_URL=$(grep -o 'https://[-a-zA-Z0-9@:%._\+~#=]*.trycloudflare.com' /var/log/cloudflared-quick.log 2>/dev/null | tail -n 1 || true)
-      echo -e "${GREEN}✓ URL Quick Tunnel mới của bạn là:${NC} ${CYAN}${BOLD}${QUICK_URL}${NC}"
+      if [ -n "$QUICK_URL" ]; then
+        echo ""
+        echo -e "${GREEN}==================================================================${NC}"
+        echo -e "${GREEN}${BOLD}✓ LINK TRUY CẬP TỪ XA MỚI (4G/INTERNET):${NC}"
+        echo -e "   👉 ${CYAN}${BOLD}${QUICK_URL}${NC}"
+        echo -e "${GREEN}==================================================================${NC}"
+        echo -e "${YELLOW}Mẹo: Mở link trên điện thoại khi bật 4G để vào server từ bất cứ đâu.${NC}"
+      else
+        echo -e "${YELLOW}Chưa trích xuất được link ngay, xem chi tiết trong log:${NC}"
+        echo -e "Lệnh: ${CYAN}cat /var/log/cloudflared-quick.log | grep trycloudflare.com${NC}"
+      fi
       ;;
     3)
       read -p "Nhập tên miền mới của bạn (ví dụ: my-server.com): " NEW_DOMAIN

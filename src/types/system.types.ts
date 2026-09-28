@@ -1,5 +1,12 @@
 // filepath: frontend/src/types/system.types.ts
 
+export interface RemoteAccessInfo {
+  active: boolean;
+  type: 'quick-tunnel' | 'named-tunnel' | 'none';
+  url: string | null;
+  isQuickTunnel?: boolean;
+}
+
 export interface StaticSystemInfo {
   hostname: string;
   platform: string;
@@ -11,6 +18,7 @@ export interface StaticSystemInfo {
   physicalCores?: number;
   speed?: number;
   model: string;
+  remoteAccess?: RemoteAccessInfo;
 }
 
 export interface RaplPowerZone {

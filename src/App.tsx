@@ -8,6 +8,7 @@ import { LoginForm } from './components/auth/LoginForm';
 import { ChangeCredentialsModal } from './components/auth/ChangeCredentialsModal';
 import { UpdateModal } from './components/update/UpdateModal';
 import { TelegramSettingsModal } from './components/telegram/TelegramSettingsModal';
+import { ServerConnectionModal } from './components/common/ServerConnectionModal';
 import { Header, NavTabType } from './components/layout/Header';
 import { TabsNav } from './components/layout/TabsNav';
 import { DashboardView } from './components/dashboard/DashboardView';
@@ -27,9 +28,10 @@ export default function App() {
   const [isChangeCredsOpen, setIsChangeCredsOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const [isTelegramOpen, setIsTelegramOpen] = useState(false);
+  const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
 
   // Khởi tạo kết nối Socket.io với Token xác thực
-  const { socket, isConnected } = useSocket(token);
+  const { socket, isConnected, reconnect } = useSocket(token);
 
   // Hook nhận luồng thông số phần cứng thời gian thực
   const { staticInfo, metrics, history } = useSystemStats(socket, isConnected);
@@ -104,8 +106,40 @@ export default function App() {
         onChangeCredentials={() => setIsChangeCredsOpen(true)}
         onOpenUpdate={() => setIsUpdateOpen(true)}
         onOpenTelegram={() => setIsTelegramOpen(true)}
+        onOpenConnectModal={() => setIsConnectModalOpen(true)}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+      />
+
+      {/* Cảnh báo rõ ràng khi đang ở chế độ Demo mô phỏng (Chưa nối tới server thật) */}
+      {!isConnected && (
+        <div className="bg-amber-500/15 border-b border-amber-500/30 px-3 sm:px-6 py-2 text-xs text-amber-900 dark:text-amber-200">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping flex-shrink-0" />
+              <span>
+                <strong>CHẾ ĐỘ MÔ PHỎNG (DEMO):</strong> Bạn đang xem thông số phần cứng mẫu (CPU AMD EPYC giả lập). Chưa kết nối tới máy chủ Ubuntu thật của bạn.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsConnectModalOpen(true)}
+              className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg transition-colors shadow-sm cursor-pointer whitespace-nowrap self-start sm:self-auto text-[11px]"
+            >
+              Kết Nối Máy Chủ Thật &rarr;
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal cấu hình kết nối máy chủ */}
+      <ServerConnectionModal
+        isOpen={isConnectModalOpen}
+        onClose={() => setIsConnectModalOpen(false)}
+        isConnected={isConnected}
+        onReconnect={(newUrl) => {
+          reconnect();
+        }}
       />
 
       {/* Modal đổi tài khoản / mật khẩu */}

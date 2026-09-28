@@ -12,14 +12,44 @@ class SystemService {
   }
 
   /**
-   * Lấy thông tin tĩnh của hệ thống (OS, CPU Model, Hostname)
+   * Đọc thông tin đường link truy cập từ xa (Cloudflare Tunnel)
+   */
+  async getRemoteAccessInfo() {
+    try {
+      const fs = require('fs');
+      const quickLog = '/var/log/cloudflared-quick.log';
+      if (fs.existsSync(quickLog)) {
+        const data = await fs.promises.readFile(quickLog, 'utf8');
+        const matches = data.match(/https:\/\/[-a-zA-Z0-9@:%._\+~#=]*\.trycloudflare\.com/g);
+        if (matches && matches.length > 0) {
+          return {
+            active: true,
+            type: 'quick-tunnel',
+            url: matches[matches.length - 1],
+            isQuickTunnel: true
+          };
+        }
+      }
+    } catch (e) {}
+
+    return {
+      active: false,
+      type: 'none',
+      url: null,
+      isQuickTunnel: false
+    };
+  }
+
+  /**
+   * Lấy thông tin tĩnh của hệ thống (OS, CPU Model, Hostname, Remote Access)
    */
   async getStaticInfo() {
     try {
-      const [osInfo, cpu, system] = await Promise.all([
+      const [osInfo, cpu, system, remoteAccess] = await Promise.all([
         si.osInfo(),
         si.cpu(),
-        si.system()
+        si.system(),
+        this.getRemoteAccessInfo()
       ]);
 
       this.cachedStatic = {
@@ -32,7 +62,8 @@ class SystemService {
         cores: cpu.cores,
         physicalCores: cpu.physicalCores,
         speed: cpu.speed,
-        model: system.model || 'Ubuntu Server'
+        model: system.model || 'Ubuntu Server',
+        remoteAccess
       };
 
       return this.cachedStatic;
