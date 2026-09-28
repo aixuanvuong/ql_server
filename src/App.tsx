@@ -71,6 +71,24 @@ export default function App() {
     };
   }, [metrics]);
 
+  // Tự động kiểm tra và giải phóng Demo Token nếu đang truy cập trên tên miền thật qua HTTPS
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+      const origin = window.location.origin;
+      const storedUrl = localStorage.getItem('ubuntu_monitor_server_url');
+      if (storedUrl && (storedUrl.includes('192.168.') || storedUrl.includes('localhost') || storedUrl.includes('127.0.0.1') || storedUrl.startsWith('http://'))) {
+        localStorage.setItem('ubuntu_monitor_server_url', origin);
+      }
+
+      const storedToken = localStorage.getItem('ubuntu_monitor_token');
+      if (storedToken === 'demo_jwt_token_sample_2026') {
+        removeStoredToken();
+        setToken(null);
+        setUser(null);
+      }
+    }
+  }, []);
+
   // Xử lý khi đăng nhập thành công
   const handleLoginSuccess = (newToken: string, loggedUser: AuthUser) => {
     setToken(newToken);
@@ -86,6 +104,10 @@ export default function App() {
   // Xử lý khi đăng xuất
   const handleLogout = () => {
     removeStoredToken();
+    localStorage.removeItem('ubuntu_monitor_token');
+    if (typeof window !== 'undefined' && window.location.origin && !window.location.origin.includes(':3000') && !window.location.origin.includes(':5173')) {
+      localStorage.setItem('ubuntu_monitor_server_url', window.location.origin);
+    }
     setToken(null);
     setUser(null);
   };

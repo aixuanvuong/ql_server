@@ -69,8 +69,10 @@ export async function loginUser(
     }
     return { success: false, message: data.message || 'Đăng nhập không thành công.' };
   } catch (error: unknown) {
-    // Dự phòng chế độ Offline / Demo nếu người dùng muốn trải nghiệm trước khi kết nối Ubuntu thực tế
-    if (credentials.username === 'admin' && credentials.password === 'admin123') {
+    const isRealDomain = typeof window !== 'undefined' && !window.location.origin.includes('localhost') && !window.location.origin.includes(':3000') && !window.location.origin.includes(':5173') && !window.location.origin.includes('run.app');
+    
+    // Chỉ kích hoạt demo token nếu người dùng đang ở môi trường test độc lập, KHÔNG kích hoạt trên domain máy chủ thật
+    if (!isRealDomain && credentials.username === 'admin' && credentials.password === 'admin123') {
       const demoToken = 'demo_jwt_token_sample_2026';
       setStoredToken(demoToken);
       return {
@@ -83,7 +85,7 @@ export async function loginUser(
     const errMessage = error instanceof Error ? error.message : 'Không thể kết nối đến máy chủ';
     return {
       success: false,
-      message: `Lỗi kết nối Backend (${errMessage}). Kiểm tra lại URL máy chủ hoặc đăng nhập với admin / admin123.`
+      message: `Lỗi kết nối Backend (${errMessage}). Vui lòng kiểm tra lại URL máy chủ: ${serverUrl}`
     };
   }
 }
