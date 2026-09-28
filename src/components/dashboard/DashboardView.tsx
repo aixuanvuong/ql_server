@@ -116,8 +116,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         />
       </div>
 
-      {/* 3. Khối Chuyên Sâu: Công Suất Điện Năng Đang Sử Dụng (Intel RAPL) */}
-      <RaplPowerSection power={metrics.power} history={history} />
+      {/* 3. Khối Chuyên Sâu: Công Suất Điện Năng Đang Sử Dụng (Intel RAPL) & Đồng Hồ Tiền Điện */}
+      <RaplPowerSection power={metrics.power} history={history} uptimeSeconds={metrics.uptime} />
 
       {/* 4. Detailed CPU Section with Core Details */}
       <CpuGauge

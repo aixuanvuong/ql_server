@@ -13,17 +13,21 @@ import {
   Gauge
 } from 'lucide-react';
 import { RaplPowerMetrics } from '../../types/system.types';
+import { ElectricityCostModal } from './ElectricityCostModal';
 
 interface RaplPowerSectionProps {
   power?: RaplPowerMetrics;
   history?: { time: string; cpu: number; mem: number; power?: number }[];
+  uptimeSeconds?: number;
 }
 
 export const RaplPowerSection: React.FC<RaplPowerSectionProps> = ({
   power,
-  history = []
+  history = [],
+  uptimeSeconds = 0
 }) => {
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showCostModal, setShowCostModal] = useState(false);
 
   if (!power) {
     return null;
@@ -110,9 +114,18 @@ export const RaplPowerSection: React.FC<RaplPowerSectionProps> = ({
           </div>
         </div>
 
-        {/* Nguồn dữ liệu & Nút Thông tin RAPL */}
+        {/* Nguồn dữ liệu & Nút Mở Đồng Hồ Tiền Điện */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-[11px] font-mono">
+          <button
+            type="button"
+            onClick={() => setShowCostModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition-all shadow-md shadow-amber-500/20 text-xs cursor-pointer group"
+          >
+            <Coins className="w-4 h-4 text-slate-950 group-hover:rotate-12 transition-transform" />
+            <span>Đồng Hồ Tiền Điện</span>
+          </button>
+
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-[11px] font-mono">
             <span
               className={`w-2 h-2 rounded-full ${
                 power.isHardwareRapl ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
@@ -242,11 +255,20 @@ export const RaplPowerSection: React.FC<RaplPowerSectionProps> = ({
               </div>
             </div>
 
-            <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1 font-sans">
-                <Coins className="w-3 h-3 text-amber-500" />
-                Ước tính tiền điện
-              </span>
+            <div
+              onClick={() => setShowCostModal(true)}
+              className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-amber-500/50 hover:bg-amber-500/5 transition-all cursor-pointer group"
+              title="Bấm để mở Đồng Hồ Tiền Điện chi tiết theo giờ, ngày, tháng"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1 font-sans">
+                  <Coins className="w-3 h-3 text-amber-500 group-hover:scale-110 transition-transform" />
+                  Tiền điện ước tính
+                </span>
+                <span className="text-[9px] text-amber-600 dark:text-amber-400 font-semibold group-hover:underline">
+                  Chi tiết &rarr;
+                </span>
+              </div>
               <div className="text-sm font-bold text-amber-600 dark:text-amber-400 mt-1 truncate">
                 ~{(power.estimatedCostVnd || 0).toLocaleString('vi-VN')} <span className="text-[10px] font-normal text-slate-400">₫</span>
               </div>
@@ -420,6 +442,14 @@ export const RaplPowerSection: React.FC<RaplPowerSectionProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Modal Chi Tiết Đồng Hồ Đo Tiền Điện Máy Chủ */}
+      <ElectricityCostModal
+        isOpen={showCostModal}
+        onClose={() => setShowCostModal(false)}
+        power={power}
+        uptimeSeconds={uptimeSeconds}
+      />
     </div>
   );
 };
