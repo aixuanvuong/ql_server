@@ -1,6 +1,7 @@
 // filepath: backend/services/command_executor.service.js
 const { exec } = require('child_process');
 const path = require('path');
+const terminalUnifiedService = require('./terminal_unified.service');
 
 class CommandExecutorService {
   constructor() {
@@ -78,11 +79,28 @@ class CommandExecutorService {
 
   /**
    * Thực thi câu lệnh hệ thống với kiểm soát Timeout nghiêm ngặt
+   * Ưu tiên thực thi TRỰC TIẾP trên Terminal Đồng Nhất để người dùng nhìn thấy AI gõ và chạy lệnh
    * @param {string} command Câu lệnh cần chạy
    * @param {object} options Tùy chọn timeoutSeconds và workingDirectory
    * @returns {Promise<{ success: boolean, command: string, stdout: string, stderr: string, exitCode: number, executionTimeMs: number, timedOut: boolean }>}
    */
-  executeCommand(command, options = {}) {
+  async executeCommand(command, options = {}) {
+    // 1. ƯU TIÊN HÀNG ĐẦU: Chạy trực tiếp trên Terminal Đồng Nhất (Unified Terminal)
+    // Người dùng sẽ nhìn thấy trực tiếp AI gõ và in log từng dòng trên màn hình xterm.js
+    if (terminalUnifiedService) {
+      try {
+        const unifiedResult = await terminalUnifiedService.executeCommandAsAi(command, options);
+        return {
+          ...unifiedResult,
+          stdout: this.truncateOutput(unifiedResult.stdout),
+          stderr: this.truncateOutput(unifiedResult.stderr)
+        };
+      } catch (unifiedErr) {
+        console.warn('[CommandExecutor] ⚠️ Lỗi khi chạy qua Terminal Đồng Nhất, chuyển sang fallback exec:', unifiedErr.message);
+      }
+    }
+
+    // 2. Fallback dự phòng: Chạy qua child_process.exec thông thường
     return new Promise((resolve) => {
       const startTime = Date.now();
       const timeoutSeconds = options.timeoutSeconds

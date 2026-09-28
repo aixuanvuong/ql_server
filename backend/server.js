@@ -15,6 +15,7 @@ const securityService = require('./services/security.service');
 const selfhealingController = require('./controllers/selfhealing.controller');
 const selfHealingService = require('./services/selfhealing.service');
 const systemService = require('./services/system.service');
+const terminalUnifiedService = require('./services/terminal_unified.service');
 const socketAuthMiddleware = require('./sockets/socket.auth');
 const registerStatsSocket = require('./sockets/stats.socket');
 const registerSshSocket = require('./sockets/ssh.socket');
@@ -116,6 +117,9 @@ selfHealingService.init(io);
 
 // Khởi tạo hệ thống Phê duyệt Lệnh cho AI Autonomous Agent (Human-in-the-Loop)
 agentApprovalService.init(io);
+
+// Khởi tạo Terminal Đồng Nhất (Unified Terminal: AI và Người dùng dùng chung 1 Terminal duy nhất)
+terminalUnifiedService.init(io);
 
 // Khởi tạo Telegram ChatOps Bot (Chế độ Polling & Bảo mật Admin ID)
 telegramService.init();

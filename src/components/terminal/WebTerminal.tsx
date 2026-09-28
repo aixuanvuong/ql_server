@@ -22,12 +22,17 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
   const termRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
 
-  const [terminalStatus, setTerminalStatus] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected');
+  const [terminalStatus, setTerminalStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting');
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isAiOpen, setIsAiOpen] = useState<boolean>(true);
   const [mobilePane, setMobilePane] = useState<'terminal' | 'ai'>('terminal');
   const [demoBuffer, setDemoBuffer] = useState<string>('');
+  const [aiTerminalActivity, setAiTerminalActivity] = useState<{
+    active: boolean;
+    command: string;
+    status: string;
+  } | null>(null);
 
   // Quản lý danh sách tài khoản SSH đã lưu để kết nối nhanh
   const [savedProfiles, setSavedProfiles] = useState<SavedSshProfile[]>([]);
@@ -144,9 +149,12 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
     return () => clearTimeout(timer);
   }, [isAiOpen, isFullscreen, mobilePane, socket, isConnected]);
 
-  // Lắng nghe dữ liệu SSH từ máy chủ truyền về qua Socket.io
+  // Lắng nghe dữ liệu Terminal Đồng Nhất từ máy chủ truyền về qua Socket.io
   useEffect(() => {
     if (!socket || !isConnected) return;
+
+    // Tự động kết nối vào phiên Terminal Đồng Nhất ngay khi mở trang
+    socket.emit('ssh:connect', {});
 
     const handleOutput = (data: string) => {
       if (termRef.current) {
@@ -167,14 +175,20 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
       }
     };
 
+    const handleAiActivity = (activity: { active: boolean; command: string; status: string }) => {
+      setAiTerminalActivity(activity);
+    };
+
     socket.on('terminal:output', handleOutput);
     socket.on('terminal:status', handleStatus);
     socket.on('terminal:error', handleError);
+    socket.on('ai:terminal_activity', handleAiActivity);
 
     return () => {
       socket.off('terminal:output', handleOutput);
       socket.off('terminal:status', handleStatus);
       socket.off('terminal:error', handleError);
+      socket.off('ai:terminal_activity', handleAiActivity);
     };
   }, [socket, isConnected]);
 
@@ -291,6 +305,9 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
   };
 
   const handleClearTerminal = () => {
+    if (socket && isConnected) {
+      socket.emit('terminal:clear');
+    }
     termRef.current?.clear();
     termRef.current?.focus();
   };
@@ -317,7 +334,7 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
             <span className="sm:hidden">Web SSH</span>
           </div>
 
-          {/* Connection Status Badge */}
+          {/* Connection Status Badge: Terminal Đồng Nhất */}
           <span
             className={`text-[10px] px-2 py-0.5 rounded-full font-mono flex items-center gap-1 ${
               terminalStatus === 'connected'
@@ -326,6 +343,7 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
                 ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
             }`}
+            title="Terminal Đồng Nhất: Bạn và AI Agent dùng chung 1 phiên Terminal duy nhất trên server"
           >
             <span
               className={`w-1.5 h-1.5 rounded-full ${
@@ -337,7 +355,7 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
               }`}
             />
             {terminalStatus === 'connected'
-              ? 'SSH Online'
+              ? 'Terminal Đồng Nhất (AI & User)'
               : terminalStatus === 'connecting'
               ? 'Đang kết nối'
               : 'Chưa kết nối'}
@@ -519,6 +537,25 @@ export const WebTerminal: React.FC<WebTerminalProps> = ({ socket, isConnected, m
             isAiOpen ? 'w-full lg:w-7/12 border-b lg:border-b-0 lg:border-r border-slate-800' : 'w-full'
           } ${isAiOpen && mobilePane === 'ai' ? 'hidden lg:flex' : 'flex'}`}
         >
+          {/* Thanh hiển thị trực tiếp khi AI Agent đang thao tác trên Terminal này */}
+          {aiTerminalActivity?.active && (
+            <div className="bg-purple-950/95 border-b border-purple-500/60 px-3 py-2 flex items-center justify-between text-xs text-purple-200 animate-in fade-in duration-150">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-ping flex-shrink-0" />
+                <Bot className="w-4 h-4 text-purple-400 flex-shrink-0 animate-bounce" />
+                <span className="font-bold text-purple-300 whitespace-nowrap">
+                  🤖 AI Agent đang thao tác Terminal trực tiếp:
+                </span>
+                <code className="text-emerald-300 font-mono text-[11px] truncate bg-purple-900/80 px-2 py-0.5 rounded border border-purple-500/30">
+                  {aiTerminalActivity.command}
+                </code>
+              </div>
+              <span className="text-[10px] text-purple-300/80 font-mono hidden sm:inline flex-shrink-0">
+                ● Live Realtime Stream
+              </span>
+            </div>
+          )}
+
           <div
             ref={containerRef}
             className="flex-1 w-full bg-[#090d16] p-2 overflow-hidden"
