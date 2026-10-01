@@ -22,6 +22,7 @@ const registerSshSocket = require('./sockets/ssh.socket');
 const registerAiSocket = require('./sockets/ai.socket');
 const agentApprovalService = require('./services/agent_approval.service');
 const telegramService = require('./services/telegram.service');
+const { verifyJWT, loginRateLimiter } = require('./middleware/auth.middleware');
 
 const app = express();
 const server = http.createServer(app);
@@ -42,6 +43,19 @@ app.use(cors({
 
 app.use(express.json());
 
+// --- 0. BẢO VỆ TOÀN BỘ REST API BẰNG JWT (trừ các endpoint công khai) ---
+const PUBLIC_API_ENDPOINTS = new Set([
+  'GET /api/health',
+  'POST /api/auth/login',
+  'GET /api/auth/verify',
+]);
+app.use((req, res, next) => {
+  if (!req.path.startsWith('/api/')) return next();
+  const key = req.method + ' ' + req.path;
+  if (PUBLIC_API_ENDPOINTS.has(key)) return next();
+  return verifyJWT(req, res, next);
+});
+
 // --- 1. REST API ROUTES ---
 // Endpoint kiểm tra trạng thái hoạt động của Backend
 app.get('/api/health', (req, res) => {
@@ -52,8 +66,8 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Endpoint đăng nhập xác thực
-app.post('/api/auth/login', authController.login);
+// Endpoint đăng nhập xác thực kèm Rate Limiter chống brute-force
+app.post('/api/auth/login', loginRateLimiter, authController.login);
 
 // Endpoint kiểm tra token
 app.get('/api/auth/verify', authController.verifyToken);

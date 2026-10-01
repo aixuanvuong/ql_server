@@ -4,6 +4,16 @@ const fs = require('fs');
 const util = require('util');
 const execPromise = util.promisify(exec);
 
+/**
+ * Kiểm tra chuỗi có phải IPv4/IPv6 hợp lệ không (chống command injection).
+ */
+function isValidIp(ip) {
+  if (typeof ip !== 'string' || ip.length > 45) return false;
+  const v4 = /^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$/;
+  const v6 = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/;
+  return v4.test(ip) || v6.test(ip);
+}
+
 class SecurityService {
   constructor() {
     this.maxFailedAttempts = 5;       // Số lần thất bại tối đa
@@ -181,6 +191,9 @@ class SecurityService {
    * Thực thi lệnh chặn IP bằng ufw hoặc iptables
    */
   async banIp(ip, reason) {
+    if (!isValidIp(ip)) {
+      return { success: false, message: 'Địa chỉ IP không hợp lệ.' };
+    }
     if (this.bannedIps.has(ip) || this.isWhitelistedIp(ip)) {
       return { success: false, message: 'IP đã bị chặn hoặc nằm trong Whitelist an toàn.' };
     }
@@ -240,7 +253,7 @@ class SecurityService {
    * Bỏ chặn (Unban) IP nếu người quản trị muốn gỡ
    */
   async unbanIp(ip) {
-    if (!ip) return { success: false, message: 'Thiếu địa chỉ IP' };
+    if (!isValidIp(ip)) return { success: false, message: 'Địa chỉ IP không hợp lệ.' };
 
     try {
       // Gỡ từ UFW
